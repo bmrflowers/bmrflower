@@ -267,7 +267,14 @@ def login_required(f):
         if 'logged_in' not in session:
             flash('Please log in to access this page.', 'warning')
             return redirect(url_for('login'))
-        return f(*args, **kwargs)
+        # Call the view and then clear the auth so the next access requires login again
+        response = f(*args, **kwargs)
+        try:
+            session.pop('logged_in', None)
+            session.pop('username', None)
+        except Exception:
+            pass
+        return response
     return decorated
 
 
