@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — {{ shop.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    /* ── Dashboard-specific styles ── */
+    .hero {
+      background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 40%, #388e3c 70%, #43a047 100%);
+      border-radius: 20px;
+      padding: 2rem 1.5rem 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(46,125,50,.35);
+    }
+    .hero::before {
+      content: '🌸';
+      font-size: 9rem;
+      position: absolute;
+      right: -1.5rem;
+      top: -1.5rem;
+      opacity: .12;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '🌺';
+      font-size: 5rem;
+      position: absolute;
+      right: 4rem;
+      bottom: -1rem;
+      opacity: .1;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .hero-greeting {
+      font-size: .85rem;
+      color: rgba(255,255,255,.75);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: .3rem;
+    }
+    .hero-shop-name {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -.5px;
+      line-height: 1.1;
+      margin-bottom: .25rem;
+    }
+    .hero-sub {
+      font-size: .82rem;
+      color: rgba(255,255,255,.7);
+    }
+    .hero-today {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      background: rgba(255,255,255,.18);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 12px;
+      padding: .65rem 1.1rem;
+      flex: 1;
+      min-width: 110px;
+      text-align: center;
+    }
+    .hero-stat-val {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+    }
+    .hero-stat-lbl {
+      font-size: .72rem;
+      color: rgba(255,255,255,.75);
+      margin-top: .15rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    /* ── Period stats row ── */
+    .period-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .85rem;
+      margin-bottom: 1.5rem;
+    }
+    @media(min-width:560px){ .period-grid{ grid-template-columns: repeat(4,1fr); } }
+    .period-card {
+      background: #fff;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      padding: 1rem .9rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .period-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+    .period-card .pc-icon { font-size: 1.5rem; margin-bottom: .35rem; }
+    .period-card .pc-val  { font-size: 1.05rem; font-weight: 800; color: var(--primary); }
+    .period-card .pc-cnt  { font-size: .72rem; color: var(--text-muted); }
+    .period-card .pc-lbl  { font-size: .75rem; font-weight: 600; color: var(--text); margin-top: .1rem; }
+
+    /* ── Nav cards ── */
+    .nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .85rem;
+      margin-bottom: 1.5rem;
+    }
+    .nav-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1.5px solid var(--border);
+      padding: 1.4rem 1rem;
+      text-align: center;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .6rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .nav-card::after {
+      content:'';
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      opacity:0;
+      transition:opacity .2s;
+    }
+    .nav-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,.12); }
+    .nav-card .nc-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.7rem;
+    }
+    .nav-card .nc-label { font-size: .88rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+    .nav-card .nc-arrow { font-size: .75rem; color: var(--text-muted); margin-top: -.1rem; }
+    .nc-green  { background: linear-gradient(135deg,#e8f5e9,#c8e6c9); }
+    .nc-blue   { background: linear-gradient(135deg,#e3f2fd,#bbdefb); }
+    .nc-orange { background: linear-gradient(135deg,#fff3e0,#ffe0b2); }
+    .nc-red    { background: linear-gradient(135deg,#fce4ec,#f8bbd0); }
+
+    /* ── Footer bar ── */
+    .dash-footer {
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      text-align: center;
+      font-size: .8rem;
+      color: var(--text-muted);
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background deco overlay -->
+<div class="page-deco no-print"></div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+    <span style="font-size:1.5rem">🌸</span>
+    <span>{{ shop.name }}</span>
+  </a>
+  <div class="navbar-right">
+    <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="page-wrapper animate-page" style="padding-bottom:2rem">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for cat, msg in messages %}
+          <li class="flash-item flash-{{ cat }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ── Hero Banner ── -->
+  <div class="hero card-anim card-anim-1">
+    <div class="hero-greeting">👋 Welcome back, {{ session.username }}</div>
+    <div class="hero-shop-name">🌸 {{ shop.name }}</div>
+    <div class="hero-sub">{{ shop.address }}</div>
+    <div class="hero-today">
+      <div class="hero-stat">
+        <div class="hero-stat-val">{{ today_count }}</div>
+        <div class="hero-stat-lbl">Bills Today</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">₹{{ "%.0f"|format(today_total) }}</div>
+        <div class="hero-stat-lbl">Today's Sales</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Period Stats ── -->
+  <div class="card-anim card-anim-2" style="font-size:.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+              letter-spacing:.07em;margin-bottom:.6rem">📈 Sales Overview</div>
+  <div class="period-grid card-anim card-anim-2">
+    <div class="period-card">
+      <div class="pc-icon">☀️</div>
+      <div class="pc-val">₹{{ "%.0f"|format(today_total) }}</div>
+      <div class="pc-cnt">{{ today_count }} bill{{ 's' if today_count != 1 }}</div>
+      <div class="pc-lbl">Today</div>
+    </div>
+    <div class="period-card">
+      <div class="pc-icon">📅</div>
+      <div class="pc-val">₹{{ "%.0f"|format(week_total) }}</div>
+      <div class="pc-cnt">{{ week_count }} bill{{ 's' if week_count != 1 }}</div>
+      <div class="pc-lbl">This Week</div>
+    </div>
+    <div class="period-card">
+      <div class="pc-icon">🗓️</div>
+      <div class="pc-val">₹{{ "%.0f"|format(month_total) }}</div>
+      <div class="pc-cnt">{{ month_count }} bill{{ 's' if month_count != 1 }}</div>
+      <div class="pc-lbl">This Month</div>
+    </div>
+    <div class="period-card" style="border-color:var(--accent);background:linear-gradient(135deg,#fce4ec,#fff)">
+      <div class="pc-icon">💐</div>
+      <div class="pc-val" style="color:var(--accent)">{{ week_count }}</div>
+      <div class="pc-cnt">this week</div>
+      <div class="pc-lbl">Total Orders</div>
+    </div>
+  </div>
+
+  <!-- ── Quick Navigation ── -->
+  <div class="card-anim card-anim-3" style="font-size:.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+              letter-spacing:.07em;margin-bottom:.6rem">⚡ Quick Actions</div>
+  <div class="nav-grid card-anim card-anim-3">
+    <a href="{{ url_for('create_bill') }}" class="nav-card">
+      <div class="nc-icon nc-green">🧾</div>
+      <div class="nc-label">Create New Bill</div>
+      <div class="nc-arrow">Tap to open →</div>
+    </a>
+    <a href="{{ url_for('history') }}" class="nav-card">
+      <div class="nc-icon nc-blue">📋</div>
+      <div class="nc-label">Billing History</div>
+      <div class="nc-arrow">View all →</div>
+    </a>
+    <a href="{{ url_for('report') }}" class="nav-card">
+      <div class="nc-icon nc-orange">📊</div>
+      <div class="nc-label">Daily Sales Report</div>
+      <div class="nc-arrow">Filter by date →</div>
+    </a>
+    <a href="{{ url_for('manage_flowers') }}" class="nav-card">
+      <div class="nc-icon" style="background:linear-gradient(135deg,#f3e5f5,#e1bee7)">🌺</div>
+      <div class="nc-label">Manage Flowers</div>
+      <div class="nc-arrow">Add / remove →</div>
+    </a>
+    <a href="{{ url_for('settings') }}" class="nav-card">
+      <div class="nc-icon" style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2)">⚙️</div>
+      <div class="nc-label">Settings</div>
+      <div class="nc-arrow">Change password →</div>
+    </a>
+    <!-- <a href="{{ url_for('logout') }}" class="nav-card">
+      <div class="nc-icon nc-red">🚪</div>
+      <div class="nc-label">Logout</div>
+      <div class="nc-arrow">Sign out →</div>
+    </a> -->
+  </div>
+
+  <!-- ── Footer Info ── -->
+  <div class="dash-footer">
+    <div style="font-weight:700;font-size:.9rem;color:var(--primary);margin-bottom:.35rem">
+      🌸 {{ shop.name }}
+    </div>
+    <div>{{ shop.address }}</div>
+    <div style="margin-top:.25rem">{{ shop.phone }} &nbsp;|&nbsp; {{ shop.email }}</div>
+    <div style="margin-top:.2rem;font-size:.75rem;color:#aaa">{{ shop.gst }}</div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+<script>
+  // Animate period cards on load
+  document.querySelectorAll('.period-card,.nav-card').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      el.style.transition = 'opacity .4s ease, transform .4s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 80 + i * 60);
+  });
+</script>
+</body>
+</html>

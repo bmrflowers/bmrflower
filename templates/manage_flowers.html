@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Flowers — {{ shop.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    .flower-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border);}
+    .flower-row.no-border{border-bottom:none}
+    .status-badge{font-size:.75rem;padding:.2rem .6rem;border-radius:20px;display:inline-block}
+    .status-badge.active{background:#e8f5e9;color:#2e7d32}
+    .status-badge.inactive{background:#fce4ec;color:#c62828}
+  </style>
+</head>
+<body>
+
+<!-- Background deco overlay -->
+<div class="page-deco no-print"></div>
+
+<!-- Navbar -->
+<nav class="navbar no-print">
+  <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+    <span style="font-size:1.5rem">🌸</span>
+    <span>{{ shop.name }}</span>
+  </a>
+  <div class="navbar-right">
+    <a href="{{ url_for('dashboard') }}" class="btn-back">← Dashboard</a>
+    <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="page-wrapper animate-page">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for cat, msg in messages %}
+          <li class="flash-item flash-{{ cat }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="page-title title-anim"><span>🌺</span> Manage Flowers</div>
+  <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1.25rem">
+    Add or remove flowers from the billing catalogue. Changes appear immediately in Create Bill.
+  </p>
+
+  {% if not db_ok %}
+  <div class="flash-item flash-warning" style="margin-bottom:1rem">
+    ⚠️ The <strong>flowers</strong> table does not exist yet. Run the SQL below in Supabase to set it up.
+    <details style="margin-top:.75rem">
+      <summary style="cursor:pointer;font-weight:600;color:var(--primary)">Show setup SQL</summary>
+      <pre style="background:#f5f5f5;border-radius:8px;padding:1rem;font-size:.78rem;overflow-x:auto;margin-top:.5rem">
+-- Run this in your Supabase SQL Editor
+CREATE TABLE IF NOT EXISTS flowers (
+  id         BIGSERIAL PRIMARY KEY,
+  name       TEXT UNIQUE NOT NULL,
+  emoji      TEXT DEFAULT '🌺',
+  is_active  BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Seed default flowers
+INSERT INTO flowers (name, emoji) VALUES
+  ('Rose',    '🌹'),
+  ('Lily',    '🌷'),
+  ('Jasmine', '🤍'),
+  ('Tulip',   '🌸'),
+  ('Lotus',   '🪷'),
+  ('Marigold','🟡'),
+  ('Orchid',  '💜')
+ON CONFLICT (name) DO NOTHING;
+
+-- Admin users table (for password management)
+CREATE TABLE IF NOT EXISTS admin_users (
+  id           BIGSERIAL PRIMARY KEY,
+  username     TEXT UNIQUE NOT NULL,
+  password     TEXT,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO admin_users (username, password) VALUES
+  ('admin', 'flower@123')
+ON CONFLICT (username) DO NOTHING;
+      </pre>
+    </details>
+  </div>
+  {% endif %}
+
+  <!-- Add New Flower -->
+  <div class="card card-anim card-anim-1" style="margin-bottom:1.25rem">
+    <div class="card-header">➕ Add New Flower</div>
+    <div class="card-body">
+      <form method="post" action="{{ url_for('manage_flowers') }}">
+        <input type="hidden" name="action" value="add" />
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:.75rem;align-items:flex-end">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="flower-name">Flower Name</label>
+            <input type="text" id="flower-name" name="name"
+                   class="form-control" placeholder="e.g. Sunflower"
+                   autocomplete="off" required />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="flower-emoji">Emoji</label>
+            <input type="text" id="flower-emoji" name="emoji"
+                   class="form-control" placeholder="🌻" maxlength="8"
+                   style="max-width:80px;text-align:center;font-size:1.25rem"
+                   value="🌺" />
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">Add</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Flower List -->
+  <div class="card card-anim card-anim-2">
+    <div class="card-header">🌸 Current Flowers ({{ flowers|length }})</div>
+    <div class="card-body" style="padding:.5rem 0 0">
+
+      {% if flowers %}
+        {% for flower in flowers %}
+        <div class="flower-row{% if loop.last %} no-border{% endif %}">
+          <span style="font-size:1.5rem;line-height:1">{{ flower.emoji }}</span>
+          <span style="flex:1;font-weight:600;font-size:.95rem">{{ flower.name }}</span>
+          {% if flower.is_active is defined %}
+            <span class="status-badge {% if flower.is_active %}active{% else %}inactive{% endif %}">
+              {% if flower.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+          {% endif %}
+          {% if flower.id is defined %}
+          <form method="post" action="{{ url_for('manage_flowers') }}"
+                onsubmit="return confirm('Remove {{ flower.name }} from catalogue?')"
+                style="margin:0">
+            <input type="hidden" name="action" value="delete" />
+            <input type="hidden" name="flower_id" value="{{ flower.id }}" />
+            <button type="submit" class="btn btn-sm"
+                    style="background:#fce4ec;color:#c62828;border:none;font-weight:600;min-width:60px">
+              🗑️ Del
+            </button>
+          </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">🌿</div>
+          <p>No flowers yet. Add one above!</p>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+</body>
+</html>

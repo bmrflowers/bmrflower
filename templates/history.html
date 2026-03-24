@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing History — {{ shop.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- Background deco overlay -->
+<div class="page-deco no-print"></div>
+
+<!-- Navbar -->
+<nav class="navbar no-print">
+  <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+    <span style="font-size:1.5rem">🌸</span>
+    <span>{{ shop.name }}</span>
+  </a>
+  <div class="navbar-right">
+    <a href="{{ url_for('dashboard') }}" class="btn-back">← Dashboard</a>
+    <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="page-wrapper animate-page">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for cat, msg in messages %}
+          <li class="flash-item flash-{{ cat }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+    <div class="page-title title-anim" style="margin-bottom:0"><span>📋</span> Billing History</div>
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+      <input id="history-search" class="form-control" placeholder="Search ID, customer, phone or date" style="max-width:320px" />
+      <a href="{{ url_for('create_bill') }}" class="btn btn-primary btn-sm">+ New Bill</a>
+      <a href="{{ url_for('export_history') }}" class="btn btn-outline btn-sm">📥 Export Excel</a>
+      <div id="history-count" style="font-size:.85rem;color:var(--text-muted);margin-left:.5rem">&nbsp;</div>
+    </div>
+  </div>
+
+  {% if bills %}
+
+  <!-- Mobile Card View (shown on small screens) -->
+  <div id="mobile-list">
+    {% for bill in bills %}
+    <div class="bill-card">
+      <div class="bill-card-info">
+        <div class="bill-id">#{{ '%04d'|format(bill.id) }}</div>
+        <div class="bill-customer">{{ bill.customer_name }}</div>
+        <div class="bill-date">
+          {{ (bill.bill_date or bill.created_at[:10]) }}
+          {% if bill.phone %}· 📱 {{ bill.phone }}{% endif %}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
+        <div class="bill-card-amount">₹{{ "%.2f"|format(bill.total) }}</div>
+        <a href="{{ url_for('invoice', bill_id=bill.id) }}" class="btn btn-sm btn-primary">View</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination no-print">
+    {% if page > 1 %}
+    <a href="{{ url_for('history', page=page-1) }}" class="btn btn-sm btn-outline">← Prev</a>
+    {% endif %}
+    <span style="font-size:.85rem;color:var(--text-muted)">Page {{ page }}</span>
+    {% if has_next %}
+    <a href="{{ url_for('history', page=page+1) }}" class="btn btn-sm btn-outline">Next →</a>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p>No bills found. <a href="{{ url_for('create_bill') }}">Create your first bill</a>.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+<script>
+// Auto-search for history page — debounce and client-side filter
+;(function(){
+  const input = document.getElementById('history-search');
+  const list = document.getElementById('mobile-list');
+  const countEl = document.getElementById('history-count');
+  if (!input || !list) return;
+
+  function normalize(s){ return (s||'').toString().toLowerCase(); }
+
+  function filterCards(q){
+    const term = normalize(q);
+    const cards = Array.from(list.querySelectorAll('.bill-card'));
+    let visible = 0;
+    cards.forEach(card => {
+      const text = normalize(card.textContent);
+      const matches = term === '' || text.indexOf(term) !== -1;
+      card.style.display = matches ? '' : 'none';
+      if (matches) visible++;
+    });
+    if (countEl) countEl.textContent = visible === cards.length ? '' : `${visible} / ${cards.length}`;
+  }
+
+  // simple debounce
+  let t = null;
+  input.addEventListener('input', (e)=>{
+    clearTimeout(t);
+    t = setTimeout(()=> filterCards(e.target.value), 180);
+  });
+
+  // on page load update count
+  window.addEventListener('load', ()=> filterCards(input.value || ''));
+})();
+</script>
+</body>
+</html>

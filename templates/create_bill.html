@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Bill — {{ shop.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- Background deco overlay -->
+<div class="page-deco no-print"></div>
+
+<!-- Navbar -->
+<nav class="navbar no-print">
+  <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+    <span style="font-size:1.5rem">🌸</span>
+    <span>{{ shop.name }}</span>
+  </a>
+  <div class="navbar-right">
+    <a href="{{ url_for('dashboard') }}" class="btn-back">← Dashboard</a>
+    <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div style="color:var(--primary);font-weight:600">Saving bill…</div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Page -->
+<form id="bill-form" method="post" action="{{ url_for('create_bill') }}">
+<div class="page-wrapper animate-page" style="padding-bottom:100px">
+
+  <div class="page-title title-anim"><span>🧧</span> New Bill</div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for cat, msg in messages %}
+          <li class="flash-item flash-{{ cat }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Customer Details -->
+  <div class="card card-anim card-anim-1" style="margin-bottom:1rem">
+    <div class="card-header">👤 Customer Details</div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label" for="customer-name">Customer Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="customer-name" name="customer_name"
+               class="form-control" placeholder="Enter customer name"
+               autocomplete="off" required />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="phone">Mobile No.</label>
+          <input type="tel" id="phone" name="phone"
+                 class="form-control" placeholder="0000000000"
+                 maxlength="10" pattern="[0-9]{10}" autocomplete="off" />
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="bill-date">Date</label>
+          <input type="date" id="bill-date" name="bill_date"
+                 class="form-control" value="{{ today }}" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flower Selection -->
+  <div class="card card-anim card-anim-2" style="margin-bottom:1rem">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🌺 Select Flowers</span>
+      <a href="{{ url_for('manage_flowers') }}" style="font-size:.78rem;color:var(--primary);font-weight:600;text-decoration:none">+ Manage</a>
+    </div>
+    <div class="card-body" style="padding-top:.75rem">
+
+      <!-- Column headers (visible on md+) -->
+      <div style="display:none" class="flower-col-headers" id="flower-col-hint">
+        <small style="color:var(--text-muted)">Tap a flower to select, then enter Qty and Rate</small>
+      </div>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.85rem">
+        Tap a flower to select it, then fill Qty and Rate.
+      </p>
+
+      {% for flower in flowers %}
+      {% set key = flower.name.lower() %}
+      <div class="flower-item" id="item-{{ key }}">
+        <div class="flower-header" onclick="document.getElementById('cb-{{ key }}').click()">
+          <input type="checkbox" class="flower-checkbox" id="cb-{{ key }}" name="cb_{{ key }}"
+                 onclick="event.stopPropagation()" />
+          <span class="flower-emoji">{{ flower.emoji }}</span>
+          <span class="flower-name">{{ flower.name }}</span>
+          <span class="item-total-badge">₹0.00</span>
+        </div>
+        <div class="flower-controls" id="ctrl-{{ key }}">
+          <div>
+            <label style="font-size:.75rem;color:var(--text-muted);display:block;margin-bottom:.25rem">Qty</label>
+            <input type="number" class="form-control qty-input"
+                   name="qty_{{ key }}" id="qty-{{ key }}"
+                   placeholder="0" min="0" step="0.5" />
+          </div>
+          <div>
+            <label style="font-size:.75rem;color:var(--text-muted);display:block;margin-bottom:.25rem">Rate (₹)</label>
+            <input type="number" class="form-control rate-input"
+                   name="rate_{{ key }}" id="rate-{{ key }}"
+                   placeholder="0.00" min="0" step="0.01" />
+          </div>
+          <div>
+            <label style="font-size:.75rem;color:var(--text-muted);display:block;margin-bottom:.25rem">Total</label>
+            <div class="form-control" style="background:var(--primary-light);color:var(--primary);font-weight:700;cursor:default"
+                 id="total-{{ key }}">₹0.00</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- GST & Totals -->
+  <div class="card card-anim card-anim-3" style="margin-bottom:1rem">
+    <div class="card-header">🧮 Totals & GST</div>
+    <div class="card-body">
+
+      <div class="form-group">
+        <label class="form-label" for="gst-percent">GST (%)</label>
+        <div class="input-group">
+          <input type="number" id="gst-percent" name="gst_percent"
+                 class="form-control" value="5" min="0" max="100" step="0.5" style="max-width:120px" />
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+
+      <div class="totals-card">
+        <div class="totals-row">
+          <span>Subtotal</span>
+          <span id="subtotal-display" style="font-weight:600">₹0.00</span>
+        </div>
+        <div class="totals-row">
+          <span>GST Amount</span>
+          <span id="gst-amount-display" style="color:var(--text-muted)">₹0.00</span>
+        </div>
+        <div class="totals-row grand-total">
+          <span>Grand Total</span>
+          <span id="grand-total-display">₹0.00</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden computed fields -->
+  <input type="hidden" id="hidden-subtotal"   name="hidden_subtotal" />
+  <input type="hidden" id="hidden-gst-amount" name="hidden_gst_amount" />
+  <input type="hidden" id="hidden-grand-total" name="hidden_grand_total" />
+
+</div><!-- /page-wrapper -->
+
+<!-- Sticky Footer -->
+<div class="bill-footer-sticky no-print">
+  <div style="display:flex;gap:.75rem;align-items:center;max-width:900px;margin:0 auto">
+    <div style="flex:1">
+      <div style="font-size:.8rem;color:var(--text-muted)">Grand Total</div>
+      <div id="footer-total" style="font-size:1.2rem;font-weight:800;color:var(--primary)">₹0.00</div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg" style="min-width:160px">
+      🧾 Generate Bill
+    </button>
+  </div>
+</div>
+
+</form>
+
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+<script>
+  // Mirror grand total to footer
+  const grandEl = document.getElementById('grand-total-display');
+  const footerEl = document.getElementById('footer-total');
+  const obs = new MutationObserver(() => {
+    if (footerEl) footerEl.textContent = grandEl.textContent;
+  });
+  if (grandEl) obs.observe(grandEl, { childList: true, characterData: true, subtree: true });
+</script>
+</body>
+</html>

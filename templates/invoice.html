@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice #{{ bill.id }} — {{ shop.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <!-- html2pdf CDN (PDF download) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+
+<!-- Background deco overlay -->
+<div class="page-deco no-print"></div>
+
+<!-- Navbar (hidden on print) -->
+<nav class="navbar no-print">
+  <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+    <span style="font-size:1.5rem">🌸</span>
+    <span>{{ shop.name }}</span>
+  </a>
+  <div class="navbar-right">
+    <a href="{{ url_for('history') }}" class="btn-back">← History</a>
+    <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="page-wrapper animate-page" style="padding-top:1.25rem">
+
+  <!-- Action buttons (no-print) -->
+  <div class="invoice-actions no-print card-anim card-anim-1" style="margin-bottom:1rem;justify-content:flex-start;padding:0">
+    <button onclick="printInvoice()" class="btn btn-outline">🖨️ Print</button>
+    <button onclick="downloadPDF()" class="btn btn-primary">⬇️ Download PDF</button>
+    <a href="{{ url_for('create_bill') }}" class="btn btn-accent">🧾 New Bill</a>
+  </div>
+
+  <!-- Invoice Paper -->
+  <div class="invoice-paper" id="invoice-content">
+
+    <!-- Header -->
+    <div class="invoice-header">
+      <div class="invoice-shop-name">🌸 {{ shop.name }}</div>
+      <div class="invoice-shop-sub">{{ shop.address }}</div>
+      <div class="invoice-shop-sub">📞 {{ shop.phone }} &nbsp;|&nbsp; ✉️ {{ shop.email }}</div>
+      <div class="invoice-shop-sub" style="margin-top:.2rem">{{ shop.gst }}</div>
+    </div>
+
+    <hr class="invoice-divider" />
+
+    <div style="text-align:center;font-weight:700;font-size:1rem;color:var(--primary);
+                letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem">
+      Tax Invoice
+    </div>
+
+    <!-- Meta info -->
+    <div class="invoice-meta">
+      <div class="block">
+        <strong>Bill To</strong>
+        <span style="font-size:.95rem;font-weight:600">{{ bill.customer_name }}</span>
+        {% if bill.phone %}
+          <span style="display:block;font-size:.85rem;color:var(--text-muted)">📱 {{ bill.phone }}</span>
+        {% endif %}
+      </div>
+      <div class="block" style="text-align:right">
+        <strong>Invoice No.</strong>
+        <span style="font-weight:700">#{{ '%04d'|format(bill.id) }}</span>
+        <br />
+        <strong>Date</strong>
+        <span>{{ (bill.bill_date or bill.created_at[:10]) }}</span>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Flower</th>
+          <th style="text-align:center">Qty</th>
+          <th style="text-align:right">Rate (₹)</th>
+          <th style="text-align:right">Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for idx, item in items | enumerate %}
+        <tr>
+          <td>{{ idx + 1 }}</td>
+          <td>{{ item.name }}</td>
+          <td style="text-align:center">{{ item.qty }}</td>
+          <td style="text-align:right">{{ "%.2f"|format(item.rate) }}</td>
+          <td style="text-align:right">{{ "%.2f"|format(item.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="invoice-totals">
+      <div class="invoice-total-row">
+        <span>Subtotal</span>
+        <span>₹{{ "%.2f"|format(bill.subtotal) }}</span>
+      </div>
+      <div class="invoice-total-row">
+        <span>GST ({{ bill.gst }}%)</span>
+        <span>₹{{ "%.2f"|format(bill.gst_amount) }}</span>
+      </div>
+      <div class="invoice-total-row grand">
+        <span>Grand Total</span>
+        <span>₹{{ "%.2f"|format(bill.total) }}</span>
+      </div>
+    </div>
+
+    <!-- Footer note -->
+    <div class="invoice-footer-note">
+      🌸 Thank you for shopping with us! &nbsp;|&nbsp; Visit again!
+    </div>
+
+  </div><!-- /invoice-paper -->
+
+</div><!-- /page-wrapper -->
+
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+<script>
+  // Jinja's enumerate is not built-in — patch via filter in app or handle here
+  // (enumerate filter is added in app.py via template_filter)
+
+  function printInvoice() {
+    window.print();
+  }
+
+  function downloadPDF() {
+    const el = document.getElementById('invoice-content');
+    const opt = {
+      margin:       [10, 10, 10, 10],
+      filename:     'invoice_{{ "%04d"|format(bill.id) }}_{{ bill.customer_name | replace(" ","_") }}.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['avoid-all'] }
+    };
+    showToast('Generating PDF…', 'info');
+    html2pdf().set(opt).from(el).save().then(() => {
+      showToast('PDF downloaded! 📄', 'success');
+    });
+  }
+
+  window.showToast = function(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast-msg ${type}`;
+    const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+    toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${msg}`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 350);
+    }, 3500);
+  };
+</script>
+</body>
+</html>
