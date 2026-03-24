@@ -59,7 +59,8 @@
         <div class="bill-customer">{{ bill.customer_name }}</div>
         <div class="bill-date">
           {{ (bill.bill_date or bill.created_at[:10]) }}
-          {% if bill.phone %}· 📱 {{ bill.phone }}{% endif %}
+            {% if bill.phone %}· 📱 {{ bill.phone }}{% endif %}
+            {% if bill.email %}· ✉️ {{ bill.email }}{% endif %}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">

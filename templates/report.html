@@ -105,6 +105,7 @@
       <div class="bill-date">
         {{ (bill.bill_date or bill.created_at[:10]) }}
         {% if bill.phone %} · 📱 {{ bill.phone }}{% endif %}
+        {% if bill.email %} · ✉️ {{ bill.email }}{% endif %}
       </div>
       <div style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">
         GST: ₹{{ "%.2f"|format(bill.gst_amount) }}

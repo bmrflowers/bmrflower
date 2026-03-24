@@ -64,6 +64,9 @@
         {% if bill.phone %}
           <span style="display:block;font-size:.85rem;color:var(--text-muted)">📱 {{ bill.phone }}</span>
         {% endif %}
+        {% if bill.email %}
+          <span style="display:block;font-size:.85rem;color:var(--text-muted)">✉️ {{ bill.email }}</span>
+        {% endif %}
       </div>
       <div class="block" style="text-align:right">
         <strong>Invoice No.</strong>

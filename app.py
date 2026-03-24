@@ -5,6 +5,10 @@ Main Flask Application
 
 import os
 import json
+import smtplib
+import threading
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from datetime import datetime, date
 from functools import wraps
 
@@ -55,6 +59,155 @@ SHOP_ADDRESS = os.environ.get('SHOP_ADDRESS', '12, Rose Garden Street, Chennai -
 SHOP_PHONE = os.environ.get('SHOP_PHONE', '+91 98765 43210')
 SHOP_EMAIL = os.environ.get('SHOP_EMAIL', 'info@bmrflowers.com')
 SHOP_GST = os.environ.get('SHOP_GST', 'GST: 33ABCDE1234F1Z5')
+
+# ── SMTP configuration ─────────────────────────────────────────────────────
+SMTP_EMAIL       = os.environ.get('SMTP_EMAIL', '')
+SMTP_APP_PASSWORD = os.environ.get('SMTP_APP_PASSWORD', '')
+
+
+def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
+                        items, subtotal, gst_percent, gst_amount, grand_total, shop):
+    """Return a self-contained HTML email that looks like the printed invoice."""
+    rows = ''
+    for idx, item in enumerate(items, 1):
+        rows += f"""
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #e8f5e9;text-align:center">{idx}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e8f5e9">{item['name']}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e8f5e9;text-align:center">{item['qty']}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e8f5e9;text-align:right">&#8377;{item['rate']:.2f}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e8f5e9;text-align:right">&#8377;{item['total']:.2f}</td>
+        </tr>"""
+
+    phone_row = f'<p style="margin:2px 0;font-size:13px;color:#555">&#128241; {phone}</p>' if phone else ''
+    email_row = f'<p style="margin:2px 0;font-size:13px;color:#555">&#9993; {email}</p>' if email else ''
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f0f4f0;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f0;padding:30px 0">
+  <tr><td align="center">
+  <table width="580" cellpadding="0" cellspacing="0"
+         style="background:#fff;border-radius:12px;overflow:hidden;
+                box-shadow:0 4px 20px rgba(0,0,0,.10)">
+
+    <!-- Header -->
+    <tr><td style="background:#2e7d32;padding:24px 30px;text-align:center">
+      <div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:1px">
+        &#127800; {shop['name']}
+      </div>
+      <div style="font-size:12px;color:#c8e6c9;margin-top:4px">{shop['address']}</div>
+      <div style="font-size:12px;color:#c8e6c9;margin-top:2px">
+        &#128222; {shop['phone']} &nbsp;|&nbsp; &#9993; {shop['email']}
+      </div>
+      <div style="font-size:11px;color:#a5d6a7;margin-top:2px">{shop['gst']}</div>
+    </td></tr>
+
+    <!-- TAX INVOICE label -->
+    <tr><td style="padding:16px 30px 0;text-align:center">
+      <div style="font-size:14px;font-weight:700;color:#2e7d32;
+                  letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #c8e6c9;
+                  padding-bottom:12px">Tax Invoice</div>
+    </td></tr>
+
+    <!-- Bill To / Invoice No -->
+    <tr><td style="padding:16px 30px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="vertical-align:top">
+            <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.08em;margin-bottom:4px">Bill To</div>
+            <p style="margin:0;font-size:15px;font-weight:700;color:#222">{customer_name}</p>
+            {phone_row}
+            {email_row}
+          </td>
+          <td style="vertical-align:top;text-align:right">
+            <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.08em">Invoice No.</div>
+            <div style="font-size:16px;font-weight:800;color:#222">#{bill_id:04d}</div>
+            <div style="font-size:10px;text-transform:uppercase;color:#888;margin-top:6px">Date</div>
+            <div style="font-size:13px;color:#444">{bill_date}</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- Items table -->
+    <tr><td style="padding:0 30px">
+      <table width="100%" cellpadding="0" cellspacing="0"
+             style="border-radius:8px;overflow:hidden;border:1px solid #c8e6c9">
+        <thead>
+          <tr style="background:#2e7d32">
+            <th style="padding:10px;color:#fff;font-size:12px;text-align:center">#</th>
+            <th style="padding:10px;color:#fff;font-size:12px;text-align:left">Flower</th>
+            <th style="padding:10px;color:#fff;font-size:12px;text-align:center">Qty</th>
+            <th style="padding:10px;color:#fff;font-size:12px;text-align:right">Rate (&#8377;)</th>
+            <th style="padding:10px;color:#fff;font-size:12px;text-align:right">Amount (&#8377;)</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </td></tr>
+
+    <!-- Totals -->
+    <tr><td style="padding:16px 30px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td colspan="2"><table width="100%" cellpadding="0" cellspacing="0"
+                style="max-width:260px;margin-left:auto">
+            <tr>
+              <td style="padding:5px 0;font-size:13px;color:#555">Subtotal</td>
+              <td style="padding:5px 0;font-size:13px;color:#555;text-align:right">&#8377;{subtotal:.2f}</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 0;font-size:13px;color:#555">GST ({gst_percent}%)</td>
+              <td style="padding:5px 0;font-size:13px;color:#555;text-align:right">&#8377;{gst_amount:.2f}</td>
+            </tr>
+            <tr style="border-top:2px solid #c8e6c9">
+              <td style="padding:10px 0 5px;font-size:15px;font-weight:800;color:#2e7d32">Grand Total</td>
+              <td style="padding:10px 0 5px;font-size:15px;font-weight:800;color:#2e7d32;text-align:right">&#8377;{grand_total:.2f}</td>
+            </tr>
+          </table></td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- Footer -->
+    <tr><td style="background:#f1f8e9;padding:16px 30px;text-align:center;
+                   font-size:13px;color:#558b2f;border-top:2px solid #c8e6c9">
+      &#127800; Thank you for shopping with us! &nbsp;|&nbsp; Visit again!
+    </td></tr>
+
+  </table>
+  </td></tr>
+</table>
+</body></html>"""
+
+
+def send_invoice_email(to_addr, bill_id, customer_name, phone, bill_date,
+                       items, subtotal, gst_percent, gst_amount, grand_total, shop):
+    """Send the invoice as an HTML email. Called in a daemon thread."""
+    if not SMTP_EMAIL or not SMTP_APP_PASSWORD or not to_addr:
+        return
+    try:
+        html_body = _build_invoice_html(
+            bill_id, customer_name, phone, to_addr, bill_date,
+            items, subtotal, gst_percent, gst_amount, grand_total, shop
+        )
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f'Your Invoice #{bill_id:04d} from {shop["name"]}'
+        msg['From']    = f'{shop["name"]} <{SMTP_EMAIL}>'
+        msg['To']      = to_addr
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
+            server.sendmail(SMTP_EMAIL, [to_addr], msg.as_string())
+    except Exception as exc:
+        # Log but never crash the main request
+        print(f'[EMAIL] Failed to send invoice to {to_addr}: {exc}')
+
 
 # ── Default flower catalogue (fallback if DB/flowers table unavailable) ──────
 DEFAULT_FLOWERS = [
@@ -222,9 +375,10 @@ def create_bill():
     if request.method == 'POST':
         try:
             customer_name = request.form.get('customer_name', '').strip()
-            phone = request.form.get('phone', '').strip()
-            bill_date = request.form.get('bill_date', date.today().isoformat())
-            gst_percent = float(request.form.get('gst_percent', 5))
+            phone         = request.form.get('phone', '').strip()
+            email         = request.form.get('email', '').strip()
+            bill_date     = request.form.get('bill_date', date.today().isoformat())
+            gst_percent   = float(request.form.get('gst_percent', 5))
 
             # Collect item data sent from the form
             items = []
@@ -257,6 +411,7 @@ def create_bill():
             result = get_supabase().table('bills').insert({
                 'customer_name': customer_name,
                 'phone': phone,
+                'email': email,
                 'items': items,
                 'subtotal': subtotal,
                 'gst': gst_percent,
@@ -267,6 +422,17 @@ def create_bill():
             }).execute()
 
             bill_id = result.data[0]['id']
+
+            # Send invoice email in background (non-blocking)
+            if email:
+                threading.Thread(
+                    target=send_invoice_email,
+                    args=(email, bill_id, customer_name, phone, bill_date,
+                          items, subtotal, gst_percent, gst_amount, grand_total,
+                          shop_info()),
+                    daemon=True
+                ).start()
+
             return jsonify({'success': True, 'bill_id': bill_id})
 
         except Exception as e:
@@ -313,7 +479,7 @@ def history():
     try:
         result = (
             get_supabase().table('bills')
-            .select('id, customer_name, phone, total, created_at, bill_date')
+            .select('id, customer_name, phone, email, total, created_at, bill_date')
             .order('created_at', desc=True)
             .range(offset, offset + per_page - 1)
             .execute()
