@@ -267,14 +267,7 @@ def login_required(f):
         if 'logged_in' not in session:
             flash('Please log in to access this page.', 'warning')
             return redirect(url_for('login'))
-        # Call the view and then clear the auth so the next access requires login again
-        response = f(*args, **kwargs)
-        try:
-            session.pop('logged_in', None)
-            session.pop('username', None)
-        except Exception:
-            pass
-        return response
+        return f(*args, **kwargs)
     return decorated
 
 
@@ -286,6 +279,28 @@ def shop_info():
         'email': SHOP_EMAIL,
         'gst': SHOP_GST,
     }
+
+
+# Global guard: require login for all routes except a small allowlist
+@app.before_request
+def require_login_for_all_routes():
+    # Allow access to static files and the login page
+    endpoint = (request.endpoint or '')
+    allowlist = ('login', 'static')
+    if endpoint in allowlist or request.path.startswith('/static/'):
+        return
+
+    # If already logged in, allow
+    if session.get('logged_in'):
+        return
+
+    # For AJAX/Fetch requests return JSON 401; otherwise redirect to login
+    wants_json = ('application/json' in request.headers.get('Accept', '')) or \
+                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+                 request.is_json
+    if wants_json:
+        return jsonify({'success': False, 'error': 'Authentication required.'}), 401
+    return redirect(url_for('login'))
 
 
 # ── Authentication routes ────────────────────────────────────────────────────
