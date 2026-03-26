@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
 
 /* ============================================================
-   BMR FLOWERS Billing Software — Main Stylesheet
+  Flower Shop Billing Software — Main Stylesheet
    Modern, mobile-first green theme  |  Poppins
    ============================================================ */
 
@@ -470,6 +470,13 @@ a:hover { color: var(--primary-dark); }
   opacity: .04;
   pointer-events: none;
   line-height: 1;
+}
+
+/* Hide decorative elements when printing so they don't obscure amounts */
+@media print {
+  .invoice-paper::before { display: none !important; }
+  .page-deco, .no-print { display: none !important; }
+  body::before { display: none !important; }
 }
 .invoice-header { text-align: center; margin-bottom: 1.5rem; }
 .invoice-shop-name {
