@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login — BMR FLOWERS</title>
+  <title>Login — {{ RMG }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
@@ -350,8 +350,8 @@
     </div>
 
     <div class="left-content">
-      <span class="left-logo-flower">🌸</span>
-      <div class="left-shop-name">{{ shop.name }}</div>
+      <span class="left-logo-flower"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ RMG }}" style="height:96px;vertical-align:middle" /></span>
+      <div class="left-shop-name">{{ RMG }}</div>
       <div class="left-tagline">Your Complete Flower Shop Billing Solution</div>
 
       <ul class="feature-list">
@@ -392,7 +392,7 @@
         </li>
       </ul>
 
-      <div class="left-badge">🌿 BMR FLOWERS &nbsp;·&nbsp; Billing v2.0</div>
+      <div class="left-badge"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ RMG }}" style="height:28px;vertical-align:middle;margin-right:8px" /> {{ RMG }} &nbsp;·&nbsp; Billing v2.0</div>
     </div>
   </div>
 
@@ -447,7 +447,7 @@
       </form>
 
       <div class="form-footer">
-        Secure access to <strong>BMR FLOWERS</strong> Billing System<br>
+        Secure access to <strong>{{ RMG }}</strong> Billing System<br>
         🌸 &nbsp; Trusted · Fast · Reliable
       </div>
 

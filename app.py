@@ -54,10 +54,10 @@ ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'flower@123')
 
 # Shop info shown on invoices
-SHOP_NAME = os.environ.get('SHOP_NAME', 'BMR FLOWERS')
+SHOP_NAME = os.environ.get('SHOP_NAME', 'RMG')
 SHOP_ADDRESS = os.environ.get('SHOP_ADDRESS', '12, Rose Garden Street, Chennai - 600001')
 SHOP_PHONE = os.environ.get('SHOP_PHONE', '+91 98765 43210')
-SHOP_EMAIL = os.environ.get('SHOP_EMAIL', 'info@bmrflowers.com')
+SHOP_EMAIL = os.environ.get('SHOP_EMAIL', 'info@shop.com')
 SHOP_GST = os.environ.get('SHOP_GST', 'GST: 33ABCDE1234F1Z5')
 
 # ── SMTP configuration ─────────────────────────────────────────────────────
@@ -66,7 +66,10 @@ SMTP_APP_PASSWORD = os.environ.get('SMTP_APP_PASSWORD', '')
 
 
 def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
-                        items, subtotal, gst_percent, gst_amount, grand_total, shop):
+                        items, subtotal, gst_percent, gst_amount, grand_total, shop,
+                        luggage_qty=0, luggage_rate=0.0, luggage_total=0.0,
+                        old_balance=0.0, cash_paid=0.0, amount_due=0.0,
+                        logo_cid: str = None, logo_url: str = None):
     """Return a self-contained HTML email that looks like the printed invoice."""
     rows = ''
     for idx, item in enumerate(items, 1):
@@ -82,6 +85,50 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
     phone_row = f'<p style="margin:2px 0;font-size:13px;color:#555">&#128241; {phone}</p>' if phone else ''
     email_row = f'<p style="margin:2px 0;font-size:13px;color:#555">&#9993; {email}</p>' if email else ''
 
+    # number-to-words helper moved to module-level `number_to_indian_words`
+    # (see function defined above _build_invoice_html). Use it here.
+
+    in_words = number_to_indian_words(grand_total)
+
+    # Build optional rows for luggage, old balance, cash paid and amount due
+    optional_rows = ''
+    if luggage_qty and luggage_total:
+        optional_rows += f"""
+            <tr>
+              <td style=\"padding:5px 0;font-size:13px;color:#555\">Luggage ({luggage_qty} x {luggage_rate:.2f})</td>
+              <td style=\"padding:5px 0;font-size:13px;color:#555;text-align:right\">&#8377;{luggage_total:.2f}</td>
+            </tr>"""
+    if old_balance:
+        optional_rows += f"""
+            <tr>
+              <td style=\"padding:5px 0;font-size:13px;color:#555\">Old Balance</td>
+              <td style=\"padding:5px 0;font-size:13px;color:#555;text-align:right\">&#8377;{old_balance:.2f}</td>
+            </tr>"""
+
+    # Cash paid shown separately (reduces amount due)
+    if cash_paid:
+        optional_rows += f"""
+            <tr>
+              <td style=\"padding:5px 0;font-size:13px;color:#555\">Cash Paid</td>
+              <td style=\"padding:5px 0;font-size:13px;color:#555;text-align:right\">- &#8377;{cash_paid:.2f}</td>
+            </tr>"""
+
+    # Amount due (if applicable)
+    if amount_due:
+        optional_rows += f"""
+            <tr style=\"border-top:1px dashed #c8e6c9\">
+              <td style=\"padding:8px 0;font-size:13px;font-weight:700;color:#222\">Amount Due</td>
+              <td style=\"padding:8px 0;font-size:13px;font-weight:700;color:#222;text-align:right\">&#8377;{amount_due:.2f}</td>
+            </tr>"""
+
+    # Header logo: prefer inline cid (for email) then URL then fallback text
+    if logo_cid:
+        header_logo = f'<img src="cid:{logo_cid}" alt="{shop["name"]}" style="max-height:48px;vertical-align:middle' + '" />'
+    elif logo_url:
+        header_logo = f'<img src="{logo_url}" alt="{shop["name"]}" style="max-height:48px;vertical-align:middle' + '" />'
+    else:
+        header_logo = f'&#127800; {shop["name"]}'
+
     return f"""<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8" /></head>
@@ -94,9 +141,9 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
 
     <!-- Header -->
     <tr><td style="background:#2e7d32;padding:24px 30px;text-align:center">
-      <div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:1px">
-        &#127800; {shop['name']}
-      </div>
+            <div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:1px">
+                {header_logo}
+            </div>
       <div style="font-size:12px;color:#c8e6c9;margin-top:4px">{shop['address']}</div>
       <div style="font-size:12px;color:#c8e6c9;margin-top:2px">
         &#128222; {shop['phone']} &nbsp;|&nbsp; &#9993; {shop['email']}
@@ -154,18 +201,22 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
         <tr>
           <td colspan="2"><table width="100%" cellpadding="0" cellspacing="0"
                 style="max-width:260px;margin-left:auto">
-            <tr>
-              <td style="padding:5px 0;font-size:13px;color:#555">Subtotal</td>
-              <td style="padding:5px 0;font-size:13px;color:#555;text-align:right">&#8377;{subtotal:.2f}</td>
-            </tr>
-            <tr>
-              <td style="padding:5px 0;font-size:13px;color:#555">GST ({gst_percent}%)</td>
-              <td style="padding:5px 0;font-size:13px;color:#555;text-align:right">&#8377;{gst_amount:.2f}</td>
-            </tr>
-            <tr style="border-top:2px solid #c8e6c9">
-              <td style="padding:10px 0 5px;font-size:15px;font-weight:800;color:#2e7d32">Grand Total</td>
-              <td style="padding:10px 0 5px;font-size:15px;font-weight:800;color:#2e7d32;text-align:right">&#8377;{grand_total:.2f}</td>
-            </tr>
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:#555">Subtotal</td>
+                            <td style="padding:5px 0;font-size:13px;color:#555;text-align:right">&#8377;{subtotal:.2f}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:#555">GST ({gst_percent}%)</td>
+                            <td style="padding:5px 0;font-size:13px;color:#555;text-align:right">&#8377;{gst_amount:.2f}</td>
+                        </tr>
+                        {optional_rows}
+                        <tr style="border-top:1px dashed #c8e6c9">
+                            <td style="padding:8px 0;font-size:13px;font-weight:700;color:#222">Grand Total</td>
+                            <td style="padding:8px 0;font-size:13px;font-weight:700;color:#222;text-align:right">&#8377;{grand_total:.2f}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="padding-top:10px;text-align:right;font-size:13px;color:#444;font-weight:600">{in_words}</td>
+                        </tr>
           </table></td>
         </tr>
       </table>
@@ -183,27 +234,179 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
 </body></html>"""
 
 
-def send_invoice_email(to_addr, bill_id, customer_name, phone, bill_date,
-                       items, subtotal, gst_percent, gst_amount, grand_total, shop):
-    """Send the invoice as an HTML email. Called in a daemon thread."""
-    if not SMTP_EMAIL or not SMTP_APP_PASSWORD or not to_addr:
+def _small_num_to_words(n: int) -> str:
+    units = ("", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+             "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+             "Seventeen", "Eighteen", "Nineteen")
+    tens = ("", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety")
+    if n < 20:
+        return units[n]
+    if n < 100:
+        return tens[n // 10] + (" " + units[n % 10] if n % 10 else "")
+    if n < 1000:
+        return units[n // 100] + " Hundred" + (" " + _small_num_to_words(n % 100) if n % 100 else "")
+    return ""
+
+
+def number_to_indian_words(amount: float) -> str:
+    # Returns English words using Indian scale (crore, lakh, thousand)
+    n = int(amount)
+    paise = int(round((amount - n) * 100))
+    parts = []
+    scales = [ (10000000, 'Crore'), (100000, 'Lakh'), (1000, 'Thousand'), (100, 'Hundred') ]
+    rem = n
+    for val, name in scales:
+        if rem >= val:
+            cnt = rem // val
+            rem = rem % val
+            parts.append(_small_num_to_words(cnt) + f' {name}')
+    if rem:
+        parts.append(_small_num_to_words(rem))
+    rupees_part = ' '.join(p for p in parts if p).strip() or 'Zero'
+    if paise:
+        paise_part = _small_num_to_words(paise)
+        return f'Rupees {rupees_part} and Paise {paise_part} only.'
+    return f'Rupees {rupees_part} only.'
+
+
+def send_invoice_email(to_addr, bill_id,
+                       items=None, subtotal=None, gst_percent=None, gst_amount=None,
+                       grand_total=None, luggage_qty=0, luggage_rate=0.0, luggage_total=0.0,
+                       old_balance=0.0, cash_paid=0.0, amount_due=0.0,
+                       customer_name=None, phone=None, bill_date=None, shop=None):
+    """Send invoice email. If full data is provided use it; otherwise fetch from DB.
+    This allows creating the email from form data even if DB schema doesn't have the
+    optional columns yet.
+    """
+    if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
+        print(f"[EMAIL] SMTP credentials missing. SMTP_EMAIL={SMTP_EMAIL!r}, SMTP_APP_PASSWORD set={bool(SMTP_APP_PASSWORD)}")
+        return
+    if not to_addr:
+        print(f"[EMAIL] No recipient address provided for bill {bill_id}; skipping send.")
         return
     try:
+        # If items not provided, fetch bill from DB
+        if items is None:
+            res = get_supabase().table('bills').select('*').eq('id', bill_id).execute()
+            if not res.data:
+                print(f"[EMAIL] Bill {bill_id} not found; aborting email.")
+                return
+            bill = res.data[0]
+            items = bill.get('items')
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except Exception:
+                    items = []
+            if items is None:
+                items = []
+            customer_name = customer_name or bill.get('customer_name', '')
+            phone = phone or bill.get('phone', '')
+            bill_date = bill_date or (bill.get('bill_date') or (bill.get('created_at') or '')[:10])
+            subtotal = float(subtotal if subtotal is not None else (bill.get('subtotal') or 0))
+            gst_percent = float(gst_percent if gst_percent is not None else (bill.get('gst') or 0))
+            gst_amount = float(gst_amount if gst_amount is not None else (bill.get('gst_amount') or 0))
+            grand_total = float(grand_total if grand_total is not None else (bill.get('total') or 0))
+            luggage_qty = int(luggage_qty if luggage_qty is not None else (bill.get('luggage_qty') or 0))
+            luggage_rate = float(luggage_rate if luggage_rate is not None else (bill.get('luggage_rate') or 0))
+            luggage_total = float(luggage_total if luggage_total is not None else (bill.get('luggage_total') or 0))
+            old_balance = float(old_balance if old_balance is not None else (bill.get('old_balance') or 0))
+            cash_paid = float(cash_paid if cash_paid is not None else (bill.get('cash_paid') or 0))
+            amount_due = float(amount_due if amount_due is not None else (bill.get('amount_due') or 0))
+            shop = shop or shop_info()
+        else:
+            # data provided by caller; ensure defaults
+            customer_name = customer_name or ''
+            phone = phone or ''
+            bill_date = bill_date or date.today().isoformat()
+            subtotal = float(subtotal or 0)
+            gst_percent = float(gst_percent or 0)
+            gst_amount = float(gst_amount or 0)
+            grand_total = float(grand_total or 0)
+            shop = shop or shop_info()
+
+        # Do not attach or embed logo in outgoing emails — keep email payload image-free.
+        # The invoice HTML used in-browser will still reference `static/img/logo.png`.
         html_body = _build_invoice_html(
             bill_id, customer_name, phone, to_addr, bill_date,
-            items, subtotal, gst_percent, gst_amount, grand_total, shop
+            items, subtotal, gst_percent, gst_amount, grand_total, shop,
+            luggage_qty, luggage_rate, luggage_total,
+            old_balance, cash_paid, amount_due,
+            logo_cid=None, logo_url=None
         )
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'Your Invoice #{bill_id:04d} from {shop["name"]}'
-        msg['From']    = f'{shop["name"]} <{SMTP_EMAIL}>'
-        msg['To']      = to_addr
-        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        # Debugging: log HTML length and a short preview so we can confirm content
+        try:
+            print(f"[EMAIL] Invoice {bill_id}: html length={len(html_body)}")
+            preview = html_body[:1000].replace('\n', ' ') 
+            print(f"[EMAIL] Preview: {preview}")
+            # Save a copy to workspace for inspection
+            out_dir = os.path.join(os.path.dirname(__file__), 'outgoing_invoices')
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, f'invoice_{bill_id}.html')
+            with open(out_path, 'w', encoding='utf-8') as f:
+                f.write(html_body)
+            print(f"[EMAIL] Saved HTML invoice to {out_path}")
+        except Exception as log_exc:
+            print(f"[EMAIL] Debug save failed: {log_exc}")
+        # Plain-text fallback for email clients that block HTML
+        text_lines = [f'Invoice #{bill_id:04d} - {shop["name"]}', f'Date: {bill_date}', '', f'Customer: {customer_name}', f'Phone: {phone}', '']
+        text_lines.append('Items:')
+        for idx, it in enumerate(items, 1):
+            text_lines.append(f"{idx}. {it.get('name')} — Qty: {it.get('qty')} @ {it.get('rate'):.2f} = {it.get('total'):.2f}")
+        text_lines.append('')
+        text_lines.append(f'Subtotal: ₹{subtotal:.2f}')
+        text_lines.append(f'GST ({gst_percent}%): ₹{gst_amount:.2f}')
+        if luggage_total:
+            text_lines.append(f'Luggage: ₹{luggage_total:.2f} ({luggage_qty} x {luggage_rate:.2f})')
+        if old_balance:
+            text_lines.append(f'Old Balance: ₹{old_balance:.2f}')
+        if cash_paid:
+            text_lines.append(f'Cash Paid: -₹{cash_paid:.2f}')
+        text_lines.append(f'Grand Total: ₹{grand_total:.2f}')
+        if amount_due:
+            text_lines.append(f'Amount Due: ₹{amount_due:.2f}')
+        # small in-words line
+        try:
+            # reuse html builder's number_to_indian_words by generating a small snippet
+            in_words = html_body.split('</table>')[-1][:200]
+        except Exception:
+            in_words = ''
+        if in_words:
+            text_lines.append('')
+            text_lines.append(in_words)
+
+        text_body = '\n'.join(text_lines)
+
+        # Build multipart/related -> multipart/alternative -> (plain, html)
+        root = MIMEMultipart('related')
+        root['Subject'] = f'Your Invoice #{bill_id:04d} from {shop["name"]}'
+        root['From']    = f'{shop["name"]} <{SMTP_EMAIL}>'
+        root['To']      = to_addr
+
+        alt = MIMEMultipart('alternative')
+        alt.attach(MIMEText(text_body, 'plain', 'utf-8'))
+        alt.attach(MIMEText(html_body, 'html', 'utf-8'))
+        root.attach(alt)
+
+        # Intentionally do not attach images to emails per user preference.
 
         with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
             server.ehlo()
             server.starttls()
             server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, [to_addr], msg.as_string())
+            # Use send_message which respects the Message object headers
+            server.send_message(root)
+            print(f"[EMAIL] Sent invoice {bill_id} to {to_addr}")
+            # Save raw message for debugging
+            try:
+                raw_dir = os.path.join(os.path.dirname(__file__), 'outgoing_invoices', 'raw')
+                os.makedirs(raw_dir, exist_ok=True)
+                raw_path = os.path.join(raw_dir, f'raw_invoice_{bill_id}.eml')
+                with open(raw_path, 'w', encoding='utf-8') as rf:
+                    rf.write(root.as_string())
+                print(f"[EMAIL] Saved raw email to {raw_path}")
+            except Exception as e:
+                print(f"[EMAIL] Failed saving raw message: {e}")
     except Exception as exc:
         # Log but never crash the main request
         print(f'[EMAIL] Failed to send invoice to {to_addr}: {exc}')
@@ -427,7 +630,30 @@ def create_bill():
 
             subtotal = round(sum(i['total'] for i in items), 2)
             gst_amount = round(subtotal * gst_percent / 100, 2)
-            grand_total = round(subtotal + gst_amount, 2)
+            # luggage and balances from form (frontend already computes these)
+            try:
+                luggage_qty = int(request.form.get('luggage_qty', 0) or 0)
+            except Exception:
+                luggage_qty = 0
+            try:
+                luggage_rate = float(request.form.get('luggage_rate', 0) or 0)
+            except Exception:
+                luggage_rate = 0.0
+            luggage_total = round(luggage_qty * luggage_rate, 2)
+
+            try:
+                old_balance = float(request.form.get('old_balance', 0) or 0)
+            except Exception:
+                old_balance = 0.0
+            try:
+                cash_paid = float(request.form.get('cash_paid', 0) or 0)
+            except Exception:
+                cash_paid = 0.0
+
+            pre_grand = round(subtotal + gst_amount + old_balance + luggage_total, 2)
+            # amount_due is pre_grand - cash_paid (not less than 0)
+            amount_due = round(max(pre_grand - cash_paid, 0.0), 2)
+            grand_total = pre_grand
 
             # Save to Supabase
             result = get_supabase().table('bills').insert({
@@ -439,21 +665,65 @@ def create_bill():
                 'gst': gst_percent,
                 'gst_amount': gst_amount,
                 'total': grand_total,
+                'luggage_qty': luggage_qty,
+                'luggage_rate': luggage_rate,
+                'luggage_total': luggage_total,
+                'old_balance': old_balance,
+                'cash_paid': cash_paid,
+                'amount_due': amount_due,
                 'bill_date': bill_date,
                 'created_at': datetime.utcnow().isoformat(),
             }).execute()
 
             bill_id = result.data[0]['id']
 
-            # Send invoice email in background (non-blocking)
+            # Send invoice email synchronously so user sees immediate send attempts
+            # (fallback to background retry if synchronous send raises).
             if email:
-                threading.Thread(
-                    target=send_invoice_email,
-                    args=(email, bill_id, customer_name, phone, bill_date,
-                          items, subtotal, gst_percent, gst_amount, grand_total,
-                          shop_info()),
-                    daemon=True
-                ).start()
+                try:
+                    send_invoice_email(
+                        email, bill_id,
+                        items=items,
+                        subtotal=subtotal,
+                        gst_percent=gst_percent,
+                        gst_amount=gst_amount,
+                        grand_total=grand_total,
+                        luggage_qty=luggage_qty,
+                        luggage_rate=luggage_rate,
+                        luggage_total=luggage_total,
+                        old_balance=old_balance,
+                        cash_paid=cash_paid,
+                        amount_due=amount_due,
+                        customer_name=customer_name,
+                        phone=phone,
+                        bill_date=bill_date,
+                        shop=shop_info(),
+                    )
+                except Exception as e:
+                    print(f"[EMAIL] Synchronous send failed for bill {bill_id}: {e}")
+                    # Spawn background retry so it can be observed in logs
+                    threading.Thread(
+                        target=send_invoice_email,
+                        args=(email, bill_id),
+                        kwargs={
+                            'items': items,
+                            'subtotal': subtotal,
+                            'gst_percent': gst_percent,
+                            'gst_amount': gst_amount,
+                            'grand_total': grand_total,
+                            'luggage_qty': luggage_qty,
+                            'luggage_rate': luggage_rate,
+                            'luggage_total': luggage_total,
+                            'old_balance': old_balance,
+                            'cash_paid': cash_paid,
+                            'amount_due': amount_due,
+                            'customer_name': customer_name,
+                            'phone': phone,
+                            'bill_date': bill_date,
+                            'shop': shop_info(),
+                        },
+                        daemon=True,
+                    ).start()
 
             return jsonify({'success': True, 'bill_id': bill_id})
 

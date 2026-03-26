@@ -63,18 +63,87 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Luggage calculation (qty * rate)
+    const lugQty = parseFloat(document.getElementById('luggage-qty')?.value) || 0;
+    const lugRate = parseFloat(document.getElementById('luggage-rate')?.value) || 0;
+    const lugTotal = lugQty * lugRate;
+    const lugEl = document.getElementById('luggage-total-display');
+    if (lugEl) lugEl.textContent = '₹' + lugTotal.toFixed(2);
+
+    // Include luggage in subtotal
+    subtotal += lugTotal;
+
     const gstPct   = parseFloat(document.getElementById('gst-percent')?.value) || 0;
     const gstAmt   = subtotal * gstPct / 100;
-    const grand    = subtotal + gstAmt;
+    // Old balance (carryover) - added after GST
+    const oldBal = parseFloat(document.getElementById('old-balance')?.value) || 0;
+
+    // Pre-paid/paid (cash)
+    const cashPaid = parseFloat(document.getElementById('cash-paid')?.value) || 0;
+
+    const preGrand = subtotal + gstAmt + oldBal;
+    // Subtract cash paid from total to get final payable (due)
+    const dueRaw   = preGrand - cashPaid;
+    const due      = Math.round(dueRaw * 100) / 100;
+    const grand    = due >= 0 ? due : 0; // displayed grand total (after cash)
 
     setText('subtotal-display',  '₹' + subtotal.toFixed(2));
     setText('gst-amount-display','₹' + gstAmt.toFixed(2));
     setText('grand-total-display','₹' + grand.toFixed(2));
+    // show old balance in totals area if present
+    const oldRow = document.getElementById('old-balance-display');
+    if (oldRow) oldRow.textContent = oldBal ? '₹' + oldBal.toFixed(2) : '₹0.00';
 
     // hidden fields for form submit
     setVal('hidden-subtotal',  subtotal.toFixed(2));
     setVal('hidden-gst-amount', gstAmt.toFixed(2));
-    setVal('hidden-grand-total', grand.toFixed(2));
+    // hidden-grand-total keeps original invoice total before cash
+    setVal('hidden-grand-total', preGrand.toFixed(2));
+    setVal('hidden-paid',       cashPaid.toFixed(2));
+    setVal('hidden-due',        (due >= 0 ? due : 0).toFixed(2));
+
+    // Grand total in words (use displayed grand after cash)
+    const wordsEl = document.getElementById('grand-total-words');
+    if (wordsEl) {
+      const words = numberToWords(grand);
+      wordsEl.textContent = words ? `(${words})` : '';
+    }
+  }
+
+  // Convert number to words (Rupees and Paise)
+  function numberToWords(amount) {
+    if (isNaN(amount)) return '';
+    const n = Math.abs(Number(amount));
+    const rupees = Math.floor(n);
+    const paise = Math.round((n - rupees) * 100);
+
+    function oneToWords(num) {
+      const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+      const b = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      if (num < 20) return a[num];
+      if (num < 100) return b[Math.floor(num/10)] + (num%10 ? ' ' + a[num%10] : '');
+      if (num < 1000) return a[Math.floor(num/100)] + ' Hundred' + (num%100 ? ' ' + oneToWords(num%100) : '');
+      return '';
+    }
+
+    function convert(num) {
+      if (num === 0) return 'Zero';
+      const parts = [];
+      const crore = Math.floor(num / 10000000);
+      if (crore) { parts.push(convert(crore) + ' Crore'); num = num % 10000000; }
+      const lakh = Math.floor(num / 100000);
+      if (lakh) { parts.push(convert(lakh) + ' Lakh'); num = num % 100000; }
+      const thousand = Math.floor(num / 1000);
+      if (thousand) { parts.push(convert(thousand) + ' Thousand'); num = num % 1000; }
+      const hundred = Math.floor(num / 100);
+      if (hundred) { parts.push(oneToWords(hundred) + (num%100 ? ' ' + oneToWords(num%100) : '') ); return parts.join(' '); }
+      if (num) parts.push(oneToWords(num));
+      return parts.join(' ');
+    }
+
+    const rupeesText = convert(rupees) + (rupees === 1 ? ' Rupee' : ' Rupees');
+    const paiseText = paise ? (convert(paise) + (paise === 1 ? ' Paise' : ' Paise')) : '';
+    return paise ? `${rupeesText} and ${paiseText}` : rupeesText;
   }
 
   function setText(id, val) {
@@ -94,6 +163,18 @@ document.addEventListener('DOMContentLoaded', () => {
       recalcTotals();
     });
   });
+
+  // Also listen for luggage and old-balance specific inputs
+  const lugQty = document.getElementById('luggage-qty');
+  const lugRate = document.getElementById('luggage-rate');
+  if (lugQty) lugQty.addEventListener('input', () => { if (parseFloat(lugQty.value) < 0) lugQty.value = ''; recalcTotals(); });
+  if (lugRate) lugRate.addEventListener('input', () => { if (parseFloat(lugRate.value) < 0) lugRate.value = ''; recalcTotals(); });
+
+  const oldBalInput = document.getElementById('old-balance');
+  if (oldBalInput) oldBalInput.addEventListener('input', () => { if (parseFloat(oldBalInput.value) < 0) oldBalInput.value = ''; recalcTotals(); });
+
+  const cashInput = document.getElementById('cash-paid');
+  if (cashInput) cashInput.addEventListener('input', () => { if (parseFloat(cashInput.value) < 0) cashInput.value = ''; recalcTotals(); });
 
   const gstInput = document.getElementById('gst-percent');
   if (gstInput) {

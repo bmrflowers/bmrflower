@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manage Flowers — {{ shop.name }}</title>
+  <title>Manage Flowers — {{ RMG }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <style>
     .flower-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border);}
@@ -21,8 +21,8 @@
 <!-- Navbar -->
 <nav class="navbar no-print">
   <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-    <span style="font-size:1.5rem">🌸</span>
-    <span>{{ shop.name }}</span>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ RMG }}" style="height:28px;vertical-align:middle;margin-right:8px" />
+    <span>{{ RMG }}</span>
   </a>
   <div class="navbar-right">
     <a href="{{ url_for('dashboard') }}" class="btn-back">← Dashboard</a>

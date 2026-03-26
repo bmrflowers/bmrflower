@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Invoice #{{ bill.id }} — {{ shop.name }}</title>
+  <title>Invoice #{{ bill.id }} — {{ RMG }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <!-- html2pdf CDN (PDF download) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
@@ -17,8 +17,8 @@
 <!-- Navbar (hidden on print) -->
 <nav class="navbar no-print">
   <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-    <span style="font-size:1.5rem">🌸</span>
-    <span>{{ shop.name }}</span>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}" style="height:28px;vertical-align:middle;margin-right:8px" />
+    <span></span>
   </a>
   <div class="navbar-right">
     <a href="{{ url_for('history') }}" class="btn-back">← History</a>
@@ -43,10 +43,10 @@
 
     <!-- Header -->
     <div class="invoice-header">
-      <div class="invoice-shop-name">🌸 {{ shop.name }}</div>
-      <div class="invoice-shop-sub">{{ shop.address }}</div>
-      <div class="invoice-shop-sub">📞 {{ shop.phone }} &nbsp;|&nbsp; ✉️ {{ shop.email }}</div>
-      <div class="invoice-shop-sub" style="margin-top:.2rem">{{ shop.gst }}</div>
+      <div class="invoice-shop-name"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}" style="max-height:90px;vertical-align:middle" /></div>
+      <div class="invoice-shop-sub">Near Madivalam Rd, Berigai, Tamil Nadu 635105 </div>
+      <div class="invoice-shop-sub">📞 {{ 8088587327 }} &nbsp;|&nbsp; ✉️ rmgflower1995@gmail.com</div>
+      <!-- <div class="invoice-shop-sub" style="margin-top:.2rem">{{ shop.gst }}</div> -->
     </div>
 
     <hr class="invoice-divider" />
@@ -98,6 +98,15 @@
           <td style="text-align:right">{{ "%.2f"|format(item.total) }}</td>
         </tr>
         {% endfor %}
+        {% if bill.luggage_total and bill.luggage_total|float > 0 %}
+        <tr>
+          <td>{{ (items|length) + 1 }}</td>
+          <td>Luggage</td>
+          <td style="text-align:center">{{ bill.luggage_qty or 0 }}</td>
+          <td style="text-align:right">{{ "%.2f"|format(bill.luggage_rate or 0) }}</td>
+          <td style="text-align:right">{{ "%.2f"|format(bill.luggage_total or 0) }}</td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
 
@@ -111,10 +120,28 @@
         <span>GST ({{ bill.gst }}%)</span>
         <span>₹{{ "%.2f"|format(bill.gst_amount) }}</span>
       </div>
+      {% if bill.old_balance and bill.old_balance|float > 0 %}
+      <div class="invoice-total-row">
+        <span>Old Balance</span>
+        <span>₹{{ "%.2f"|format(bill.old_balance) }}</span>
+      </div>
+      {% endif %}
+      {% if bill.cash_paid and bill.cash_paid|float > 0 %}
+      <div class="invoice-total-row">
+        <span>Cash Paid</span>
+        <span>₹{{ "%.2f"|format(bill.cash_paid) }}</span>
+      </div>
+      {% endif %}
       <div class="invoice-total-row grand">
         <span>Grand Total</span>
         <span>₹{{ "%.2f"|format(bill.total) }}</span>
       </div>
+      {% if bill.amount_due is defined %}
+      <div class="invoice-total-row">
+        <span>Amount Due</span>
+        <span>₹{{ "%.2f"|format(bill.amount_due) }}</span>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Footer note -->

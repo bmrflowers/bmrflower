@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — {{ shop.name }}</title>
+  <title>Dashboard — {{ RMG }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <style>
     /* ── Dashboard-specific styles ── */
@@ -174,8 +174,8 @@
 <!-- Navbar -->
 <nav class="navbar">
   <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-    <span style="font-size:1.5rem">🌸</span>
-    <span>{{ shop.name }}</span>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ RMG }}" style="max-height:60pX;vertical-align:middle;margin-right:15px" />
+    <span>{{ RMG }}</span>
   </a>
   <div class="navbar-right">
     <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
@@ -200,8 +200,8 @@
   <!-- ── Hero Banner ── -->
   <div class="hero card-anim card-anim-1">
     <div class="hero-greeting">👋 Welcome back, {{ session.username }}</div>
-    <div class="hero-shop-name">🌸 {{ shop.name }}</div>
-    <div class="hero-sub">{{ shop.address }}</div>
+    <div class="hero-shop-name"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ RMG }}" style="height:96px;vertical-align:middle;margin-right:12px" /> <span>{{ RMG }}</span></div>
+    <div class="hero-sub"> Near Madivalam Rd, Berigai, Tamil Nadu 635105 </div>
     <div class="hero-today">
       <div class="hero-stat">
         <div class="hero-stat-val">{{ today_count }}</div>
@@ -283,11 +283,11 @@
   <!-- ── Footer Info ── -->
   <div class="dash-footer">
     <div style="font-weight:700;font-size:.9rem;color:var(--primary);margin-bottom:.35rem">
-      🌸 {{ shop.name }}
+       {{ RMG }}
     </div>
-    <div>{{ shop.address }}</div>
-    <div style="margin-top:.25rem">{{ shop.phone }} &nbsp;|&nbsp; {{ shop.email }}</div>
-    <div style="margin-top:.2rem;font-size:.75rem;color:#aaa">{{ shop.gst }}</div>
+    <div> Near Madivalam Rd, Berigai, Tamil Nadu 635105 </div>
+    <div style="margin-top:.25rem">📞 8088587327 &nbsp;|&nbsp; ✉️ rmgflower1995@gmail.com</div>
+    <!-- <div style="margin-top:.2rem;font-size:.75rem;color:#aaa">{{ shop.gst }}</div> -->
   </div>
 
 </div>

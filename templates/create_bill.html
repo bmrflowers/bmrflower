@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Create Bill — {{ shop.name }}</title>
+  <title>Create Bill — {{ RMG }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
@@ -14,8 +14,8 @@
 <!-- Navbar -->
 <nav class="navbar no-print">
   <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-    <span style="font-size:1.5rem">🌸</span>
-    <span>{{ shop.name }}</span>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ RMG }}" style="height:60px;vertical-align:middle;margin-right:15px" />
+    <span>{{ RMG }}</span>
   </a>
   <div class="navbar-right">
     <a href="{{ url_for('dashboard') }}" class="btn-back">← Dashboard</a>
@@ -131,6 +131,29 @@
     </div>
   </div>
 
+    <!-- Luggage row -->
+    <div class="card card-anim card-anim-4" style="margin-bottom:1rem">
+      <div class="card-header">🧳 Luggage</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;align-items:end">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="luggage-qty">Qty</label>
+            <input type="number" id="luggage-qty" name="luggage_qty" class="form-control qty-input"
+                   placeholder="0" min="0" step="1" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="luggage-rate">Rate (₹)</label>
+            <input type="number" id="luggage-rate" name="luggage_rate" class="form-control rate-input"
+                   placeholder="0.00" min="0" step="0.01" />
+          </div>
+          <div style="margin-bottom:0">
+            <label class="form-label">Total</label>
+            <div class="form-control" id="luggage-total-display" style="background:var(--primary-light);color:var(--primary);font-weight:700;cursor:default">₹0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   <!-- GST & Totals -->
   <div class="card card-anim card-anim-3" style="margin-bottom:1rem">
     <div class="card-header">🧮 Totals & GST</div>
@@ -154,9 +177,34 @@
           <span>GST Amount</span>
           <span id="gst-amount-display" style="color:var(--text-muted)">₹0.00</span>
         </div>
+        <div class="totals-row">
+          <span>Old Balance</span>
+          <span>
+            <input type="number" id="old-balance" name="old_balance" value="0" step="0.01"
+                   class="form-control" style="max-width:140px;text-align:right" />
+          </span>
+        </div>
+        <div class="totals-row">
+          <span>Old Balance (display)</span>
+          <span id="old-balance-display" style="color:var(--text-muted)">₹0.00</span>
+        </div>
+        <div class="totals-row">
+          <span>Cash Paid</span>
+          <span>
+            <input type="number" id="cash-paid" name="cash_paid" value="0" step="0.01"
+                   class="form-control" style="max-width:140px;text-align:right" />
+          </span>
+        </div>
+        <div class="totals-row">
+          <span>Amount Due</span>
+          <span id="due-display" style="color:var(--text-muted)">₹0.00</span>
+        </div>
         <div class="totals-row grand-total">
           <span>Grand Total</span>
-          <span id="grand-total-display">₹0.00</span>
+          <span>
+            <span id="grand-total-display">₹0.00</span>
+            <small id="grand-total-words" style="margin-left:.5rem;color:var(--text-muted);font-weight:600"></small>
+          </span>
         </div>
       </div>
 
@@ -167,6 +215,8 @@
   <input type="hidden" id="hidden-subtotal"   name="hidden_subtotal" />
   <input type="hidden" id="hidden-gst-amount" name="hidden_gst_amount" />
   <input type="hidden" id="hidden-grand-total" name="hidden_grand_total" />
+  <input type="hidden" id="hidden-paid" name="hidden_paid" />
+  <input type="hidden" id="hidden-due" name="hidden_due" />
 
 </div><!-- /page-wrapper -->
 

@@ -20,7 +20,7 @@ A mobile-first Flask web application for managing billing in a flower shop, powe
 ## Project Structure
 
 ```
-BMR/
+billing-app/
 ├── app.py                  # Main Flask application
 ├── requirements.txt
 ├── .env.example            # Copy to .env and fill credentials
@@ -88,7 +88,7 @@ CREATE POLICY "Allow all for service role"
 
 ```bash
 # 1. Clone / navigate to the project folder
-cd "c:\Users\ELCOT\Documents\BMR"
+cd "c:\Users\ELCOT\Documents\billing-app"
 
 # 2. Create virtual environment
 python -m venv venv
