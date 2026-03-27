@@ -55,7 +55,7 @@
     {% for bill in bills %}
     <div class="bill-card">
       <div class="bill-card-info">
-        <div class="bill-id">#{{ '%04d'|format(bill.id) }}</div>
+        <div class="bill-id">{{ bill.created_ist }}</div>
         <div class="bill-customer">{{ bill.customer_name }}</div>
         <div class="bill-date">
           {{ (bill.bill_date or bill.created_at[:10]) }}

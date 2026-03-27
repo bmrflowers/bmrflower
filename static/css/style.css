@@ -472,11 +472,38 @@ a:hover { color: var(--primary-dark); }
   line-height: 1;
 }
 
-/* Hide decorative elements when printing so they don't obscure amounts */
+/* Hide decorative elements when printing so they don't obscure amounts
+   and ensure full-color backgrounds are preserved in PDF/print output. */
 @media print {
+  /* preserve background colors and gradients when printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Remove large decorative flower and UI-only elements */
   .invoice-paper::before { display: none !important; }
   .page-deco, .no-print { display: none !important; }
   body::before { display: none !important; }
+
+  /* Ensure invoice canvas remains solid and fully opaque */
+  .invoice-paper {
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Make sure headers and totals print with intended colors */
+  .invoice-table th,
+  .invoice-shop-name,
+  .invoice-meta,
+  .invoice-total-row.grand {
+    opacity: 1 !important;
+    filter: none !important;
+  }
 }
 .invoice-header { text-align: center; margin-bottom: 1.5rem; }
 .invoice-shop-name {

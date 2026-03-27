@@ -9,7 +9,7 @@ import smtplib
 import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -69,7 +69,8 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
                         items, subtotal, gst_percent, gst_amount, grand_total, shop,
                         luggage_qty=0, luggage_rate=0.0, luggage_total=0.0,
                         old_balance=0.0, cash_paid=0.0, amount_due=0.0,
-                        logo_cid: str = None, logo_url: str = None):
+                        logo_cid: str = None, logo_url: str = None,
+                        created_ist: str = None):
     """Return a self-contained HTML email that looks like the printed invoice."""
     rows = ''
     for idx, item in enumerate(items, 1):
@@ -155,7 +156,7 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
     <tr><td style="padding:16px 30px 0;text-align:center">
       <div style="font-size:14px;font-weight:700;color:#2e7d32;
                   letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #c8e6c9;
-                  padding-bottom:12px">Tax Invoice</div>
+                  padding-bottom:12px">RMG FLOWERS BILL</div>
     </td></tr>
 
     <!-- Bill To / Invoice No -->
@@ -168,12 +169,12 @@ def _build_invoice_html(bill_id, customer_name, phone, email, bill_date,
             {phone_row}
             {email_row}
           </td>
-          <td style="vertical-align:top;text-align:right">
-            <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.08em">Invoice No.</div>
-            <div style="font-size:16px;font-weight:800;color:#222">#{bill_id:04d}</div>
-            <div style="font-size:10px;text-transform:uppercase;color:#888;margin-top:6px">Date</div>
-            <div style="font-size:13px;color:#444">{bill_date}</div>
-          </td>
+        <td style="vertical-align:top;text-align:right">
+                        <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.08em">Created (IST)</div>
+                        <div style="font-size:16px;font-weight:800;color:#222">{created_ist or ''}</div>
+                        <div style="font-size:10px;text-transform:uppercase;color:#888;margin-top:6px">Date</div>
+                        <div style="font-size:13px;color:#444">{bill_date}</div>
+                    </td>
         </tr>
       </table>
     </td></tr>
@@ -269,6 +270,25 @@ def number_to_indian_words(amount: float) -> str:
     return f'Rupees {rupees_part} only.'
 
 
+def format_created_ist(created_at_str: str) -> str:
+    """Convert an ISO created_at string (assumed UTC) to Indian Standard Time string.
+    Returns formatted string 'YYYY-MM-DD HH:MM:SS' or a best-effort fallback.
+    """
+    try:
+        if not created_at_str:
+            return ''
+        dt = datetime.fromisoformat(created_at_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        ist = dt.astimezone(timezone(timedelta(hours=5, minutes=30)))
+        return ist.strftime('%Y-%m-%d %H:%M:%S')
+    except Exception:
+        try:
+            return (created_at_str or '')[:19]
+        except Exception:
+            return created_at_str or ''
+
+
 def send_invoice_email(to_addr, bill_id,
                        items=None, subtotal=None, gst_percent=None, gst_amount=None,
                        grand_total=None, luggage_qty=0, luggage_rate=0.0, luggage_total=0.0,
@@ -314,6 +334,8 @@ def send_invoice_email(to_addr, bill_id,
             cash_paid = float(cash_paid if cash_paid is not None else (bill.get('cash_paid') or 0))
             amount_due = float(amount_due if amount_due is not None else (bill.get('amount_due') or 0))
             shop = shop or shop_info()
+            # Format created IST for display in the generated HTML
+            created_ist = format_created_ist(bill.get('created_at'))
         else:
             # data provided by caller; ensure defaults
             customer_name = customer_name or ''
@@ -324,6 +346,8 @@ def send_invoice_email(to_addr, bill_id,
             gst_amount = float(gst_amount or 0)
             grand_total = float(grand_total or 0)
             shop = shop or shop_info()
+            # If caller provided data (just-created bill), use current time as created_ist
+            created_ist = format_created_ist(datetime.utcnow().isoformat())
 
         # Do not attach or embed logo in outgoing emails — keep email payload image-free.
         # The invoice HTML used in-browser will still reference `static/img/logo.png`.
@@ -332,7 +356,8 @@ def send_invoice_email(to_addr, bill_id,
             items, subtotal, gst_percent, gst_amount, grand_total, shop,
             luggage_qty, luggage_rate, luggage_total,
             old_balance, cash_paid, amount_due,
-            logo_cid=None, logo_url=None
+            logo_cid=None, logo_url=None,
+            created_ist=created_ist
         )
         # Debugging: log HTML length and a short preview so we can confirm content
         try:
@@ -754,6 +779,8 @@ def invoice(bill_id):
         if items is None:
             items = []
         bill['items'] = items
+        # Add created time in IST for display
+        bill['created_ist'] = format_created_ist(bill.get('created_at'))
         return render_template('invoice.html', bill=bill, items=items, shop=shop_info())
     except Exception as e:
         flash(f'Error loading invoice: {e}', 'danger')
@@ -783,6 +810,13 @@ def history():
         bills = []
         has_next = False
 
+    # Add created_ist for each bill (convert UTC created_at -> IST)
+    for b in bills:
+        try:
+            b['created_ist'] = format_created_ist(b.get('created_at'))
+        except Exception:
+            b['created_ist'] = b.get('created_at', '')
+
     return render_template('history.html', bills=bills, page=page, has_next=has_next, shop=shop_info())
 
 
@@ -809,7 +843,12 @@ def report():
         flash(f'Error loading report: {e}', 'danger')
         bills = []
         total_sales = total_gst = total_subtotal = 0.0
-
+    # Add created_ist for display
+    for b in bills:
+        try:
+            b['created_ist'] = format_created_ist(b.get('created_at'))
+        except Exception:
+            b['created_ist'] = b.get('created_at', '')
     return render_template(
         'report.html',
         bills=bills,
@@ -832,7 +871,7 @@ def _build_excel(bills: list, sheet_title: str) -> io.BytesIO:
     header_font = Font(bold=True, color='FFFFFF')
     center = Alignment(horizontal='center')
 
-    headers = ['Bill ID', 'Customer Name', 'Phone', 'Date', 'Subtotal (₹)', 'GST %', 'GST Amount (₹)', 'Total (₹)']
+    headers = ['Created (IST)', 'Customer Name', 'Phone', 'Date', 'Subtotal (₹)', 'GST %', 'GST Amount (₹)', 'Total (₹)']
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)
         cell.fill = header_fill
@@ -841,7 +880,9 @@ def _build_excel(bills: list, sheet_title: str) -> io.BytesIO:
 
     for row_idx, b in enumerate(bills, 2):
         created = b.get('bill_date') or b.get('created_at', '')[:10]
-        ws.cell(row=row_idx, column=1, value=b.get('id'))
+        # prefer created_ist if present
+        created_ist = b.get('created_ist') or format_created_ist(b.get('created_at'))
+        ws.cell(row=row_idx, column=1, value=created_ist)
         ws.cell(row=row_idx, column=2, value=b.get('customer_name', ''))
         ws.cell(row=row_idx, column=3, value=b.get('phone', ''))
         ws.cell(row=row_idx, column=4, value=created)
