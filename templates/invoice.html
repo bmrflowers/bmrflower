@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Invoice {{ bill.created_ist }} — {{ RMG }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <!-- html2canvas (standalone, required for WhatsApp image capture) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"
+    referrerpolicy="no-referrer"></script>
   <!-- html2pdf CDN (PDF download) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"
+    referrerpolicy="no-referrer"></script>
 
   <style>
     /* ---- Invoice-specific styles (screen + PDF) ---- */
@@ -28,10 +32,12 @@
       padding: 22px 28px;
       text-align: center;
     }
+
     .inv-header-banner .inv-logo-img {
       max-height: 70px;
       margin-bottom: 8px;
     }
+
     .inv-header-banner .inv-shop-title {
       font-size: 1.8rem;
       font-weight: 900;
@@ -39,11 +45,13 @@
       letter-spacing: 2px;
       margin: 0;
     }
+
     .inv-header-banner .inv-shop-addr {
       font-size: 0.82rem;
       color: #c8e6c9;
       margin-top: 4px;
     }
+
     .inv-header-banner .inv-shop-contact {
       font-size: 0.82rem;
       color: #a5d6a7;
@@ -53,8 +61,8 @@
     /* Bill Title stripe */
     .inv-bill-title {
       background: #e8f5e9;
-      border-top: 3px solid #2e7d32;
-      border-bottom: 3px solid #2e7d32;
+      border-top: 3px solid #33a33a;
+      border-bottom: 3px solid #33a33a;
       text-align: center;
       padding: 10px 0;
       font-size: 1.05rem;
@@ -74,20 +82,24 @@
       background: #f9fdf9;
       border-bottom: 1.5px solid #c8e6c9;
     }
+
     .inv-meta-block {}
+
     .inv-meta-label {
       font-size: 0.7rem;
       font-weight: 700;
-      color: #2e7d32;
+      color: #33a33a;
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 2px;
     }
+
     .inv-meta-value {
       font-size: 0.92rem;
       font-weight: 700;
       color: #1a1a1a;
     }
+
     .inv-meta-sub {
       font-size: 0.82rem;
       color: #333333;
@@ -100,8 +112,9 @@
       border-collapse: collapse;
       font-size: 0.88rem;
     }
+
     .inv-table thead th {
-      background: #2e7d32;
+      background: #33a33a;
       color: #ffffff;
       font-weight: 700;
       font-size: 0.78rem;
@@ -111,42 +124,55 @@
       text-align: left;
       border-bottom: 2px solid #1b5e20;
     }
+
     .inv-table tbody td {
       padding: 10px 14px;
       color: #1a1a1a;
       font-weight: 500;
       border-bottom: 1px solid #e0e0e0;
     }
+
     .inv-table tbody tr:nth-child(even) td {
       background: #f5faf5;
     }
+
     .inv-table tbody tr:nth-child(odd) td {
       background: #ffffff;
     }
-    .inv-table .text-center { text-align: center; }
-    .inv-table .text-right { text-align: right; }
+
+    .inv-table .text-center {
+      text-align: center;
+    }
+
+    .inv-table .text-right {
+      text-align: right;
+    }
 
     /* Totals Section */
     .inv-totals-section {
       padding: 16px 28px 16px 28px;
       background: #ffffff;
     }
+
     .inv-totals-table {
       width: 100%;
       max-width: 360px;
       margin-left: auto;
       border-collapse: collapse;
     }
+
     .inv-totals-table td {
       padding: 7px 0;
       font-size: 0.9rem;
       color: #1a1a1a;
       font-weight: 500;
     }
+
     .inv-totals-table td:last-child {
       text-align: right;
       font-weight: 600;
     }
+
     .inv-totals-table .inv-grand-row td {
       border-top: 3px solid #1b5e20;
       font-size: 1.15rem;
@@ -155,6 +181,7 @@
       padding-top: 12px;
       padding-bottom: 12px;
     }
+
     .inv-totals-table .inv-due-row td {
       color: #c62828;
       font-weight: 700;
@@ -171,243 +198,880 @@
       font-weight: 500;
       letter-spacing: 0.5px;
     }
+
     .inv-footer strong {
       color: #ffffff;
     }
 
+    /* WhatsApp Button */
+    .btn-whatsapp {
+      background: #25D366;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+    }
+
+    .btn-whatsapp:hover {
+      background: #1da851;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(37, 211, 102, 0.45);
+    }
+
+    .btn-whatsapp:active {
+      transform: translateY(0);
+    }
+
+    .btn-whatsapp svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* WhatsApp Modal Overlay */
+    .wa-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      animation: waFadeIn 0.3s ease;
+    }
+
+    .wa-modal-overlay.show {
+      display: flex;
+    }
+
+    @keyframes waFadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes waSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .wa-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 92%;
+      max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      animation: waSlideUp 0.35s ease;
+    }
+
+    .wa-modal-header {
+      background: #25D366;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .wa-modal-header svg {
+      width: 28px;
+      height: 28px;
+      fill: #fff;
+      flex-shrink: 0;
+    }
+
+    .wa-modal-body {
+      padding: 24px;
+    }
+
+    .wa-modal-body label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .wa-modal-body input[type=tel] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      transition: border-color 0.3s;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .wa-modal-body input[type=tel]:focus {
+      border-color: #25D366;
+      box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.15);
+    }
+
+    .wa-phone-prefix {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .wa-phone-prefix .prefix {
+      background: #f5f5f5;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .wa-phone-prefix input[type=tel] {
+      flex: 1;
+    }
+
+    .wa-preview-box {
+      margin-top: 16px;
+      background: #f0faf0;
+      border: 1.5px solid #c8e6c9;
+      border-radius: 10px;
+      padding: 14px 16px;
+      max-height: 280px;
+      overflow-y: auto;
+      text-align: center;
+    }
+
+    .wa-preview-box img {
+      max-width: 100%;
+      border-radius: 6px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .wa-preview-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #888;
+      margin-top: 16px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .wa-generating {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 30px 0;
+      color: #555;
+    }
+
+    .wa-generating .wa-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e0e0e0;
+      border-top-color: #25D366;
+      border-radius: 50%;
+      animation: waSpin 0.8s linear infinite;
+    }
+
+    @keyframes waSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .wa-step-info {
+      background: #e8f5e9;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: #33a33a;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wa-step-info.show {
+      display: flex;
+    }
+
+    .wa-modal-footer {
+      padding: 16px 24px 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .wa-btn-cancel {
+      background: #f5f5f5;
+      color: #555;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .wa-btn-cancel:hover {
+      background: #e8e8e8;
+    }
+
+    .wa-btn-send {
+      background: #25D366;
+      color: #fff;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+    }
+
+    .wa-btn-send:hover {
+      background: #1da851;
+      box-shadow: 0 4px 16px rgba(37, 211, 102, 0.45);
+    }
+
     /* Print-specific */
     @media print {
-      body { background: #fff !important; }
-      body::before { display: none !important; }
-      .page-deco, .no-print, .navbar, .invoice-actions { display: none !important; }
-      .inv-container { border: 2px solid #1b5e20 !important; }
-      .inv-header-banner { background: #1b5e20 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .inv-table thead th { background: #2e7d32 !important; color: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .inv-bill-title { background: #e8f5e9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .inv-footer { background: #1b5e20 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body {
+        background: #fff !important;
+      }
+
+      body::before {
+        display: none !important;
+      }
+
+      .page-deco,
+      .no-print,
+      .navbar,
+      .invoice-actions {
+        display: none !important;
+      }
+
+      .inv-container {
+        border: 2px solid #1b5e20 !important;
+      }
+
+      .inv-header-banner {
+        background: #1b5e20 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .inv-table thead th {
+        background: #33a33a !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .inv-bill-title {
+        background: #e8f5e9 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .inv-footer {
+        background: #1b5e20 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .wa-modal-overlay {
+        display: none !important;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- Background deco overlay -->
-<div class="page-deco no-print"></div>
+  <!-- Background deco overlay -->
+  <div class="page-deco no-print"></div>
 
-<!-- Navbar (hidden on print) -->
-<nav class="navbar no-print">
-  <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}" style="height:28px;vertical-align:middle;margin-right:8px" />
-    <span></span>
-  </a>
-  <div class="navbar-right">
-    <a href="{{ url_for('history') }}" class="btn-back">← History</a>
-    <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
-  </div>
-</nav>
-
-<!-- Toast -->
-<div class="toast-container" id="toast-container"></div>
-
-<div class="page-wrapper animate-page" style="padding-top:1.25rem">
-
-  <!-- Action buttons (no-print) -->
-  <div class="invoice-actions no-print card-anim card-anim-1" style="margin-bottom:1rem;justify-content:flex-start;padding:0">
-    <button onclick="printInvoice()" class="btn btn-outline">🖨️ Print</button>
-    <button onclick="downloadPDF()" class="btn btn-primary">⬇️ Download PDF</button>
-    <a href="{{ url_for('create_bill') }}" class="btn btn-accent">🧾 New Bill</a>
-  </div>
-
-  <!-- ========== INVOICE CONTENT (captured for PDF) ========== -->
-  <div id="invoice-content" class="inv-container">
-
-    <!-- ▓▓ GREEN HEADER BANNER ▓▓ -->
-    <div class="inv-header-banner" style="background:#1b5e20;color:#ffffff;padding:22px 28px;text-align:center;">
+  <!-- Navbar (hidden on print) -->
+  <nav class="navbar no-print">
+    <a class="navbar-brand" href="{{ url_for('dashboard') }}">
       <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}"
-           class="inv-logo-img" style="max-height:70px;margin-bottom:8px;" />
-      <div class="inv-shop-title" style="font-size:1.8rem;font-weight:900;color:#ffffff;letter-spacing:2px;">RMG FLOWERS</div>
-      <div class="inv-shop-addr" style="font-size:0.82rem;color:#c8e6c9;margin-top:4px;">Near Madivalam Rd, Berigai, Tamil Nadu 635105</div>
-      <div class="inv-shop-contact" style="font-size:0.82rem;color:#a5d6a7;margin-top:2px;">📞 8088587327  |  ✉️ rmgflower1995@gmail.com</div>
+        style="height:28px;vertical-align:middle;margin-right:8px" />
+      <span></span>
+    </a>
+    <div class="navbar-right">
+      <a href="{{ url_for('history') }}" class="btn-back">← History</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+    </div>
+  </nav>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="page-wrapper animate-page" style="padding-top:1.25rem">
+
+    <!-- Action buttons (no-print) -->
+    <div class="invoice-actions no-print card-anim card-anim-1"
+      style="margin-bottom:1rem;justify-content:flex-start;padding:0">
+      <button onclick="printInvoice()" class="btn btn-outline">🖨️ Print</button>
+      <button onclick="downloadPDF()" class="btn btn-primary">⬇️ Download PDF</button>
+      <button onclick="openWhatsAppModal()" class="btn-whatsapp" id="btn-whatsapp">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+        </svg>
+        Send via WhatsApp
+      </button>
+      <a href="{{ url_for('create_bill') }}" class="btn btn-accent">🧾 New Bill</a>
     </div>
 
-    <!-- ▓▓ BILL TITLE STRIPE ▓▓ -->
-    <div class="inv-bill-title" style="background:#e8f5e9;border-top:3px solid #2e7d32;border-bottom:3px solid #2e7d32;text-align:center;padding:10px 0;font-size:1.05rem;font-weight:800;color:#1b5e20;letter-spacing:3px;text-transform:uppercase;">
-      RMG
-    </div>
+    <!-- ========== INVOICE CONTENT (captured for PDF) ========== -->
+    <div id="invoice-content" class="inv-container">
 
-    <!-- ▓▓ BILL-TO & DATE ▓▓ -->
-    <div class="inv-meta-section" style="display:flex;justify-content:space-between;padding:18px 28px;gap:16px;flex-wrap:wrap;background:#f9fdf9;border-bottom:1.5px solid #c8e6c9;">
-      <div class="inv-meta-block">
-        <div class="inv-meta-label" style="font-size:0.7rem;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Bill To</div>
-        <div class="inv-meta-value" style="font-size:0.95rem;font-weight:700;color:#1a1a1a;">{{ bill.customer_name }}</div>
-        {% if bill.phone %}
+      <!-- ▓▓ GREEN HEADER BANNER ▓▓ -->
+      <div class="inv-header-banner" style="background:#33a33a;color:#ffffff;padding:22px 28px;text-align:center;">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}" class="inv-logo-img"
+          style="max-height:70px;margin-bottom:8px;" />
+        <div class="inv-shop-title" style="font-size:1.8rem;font-weight:900;color:#ffffff;letter-spacing:2px;">RMG
+          FLOWERS</div>
+        <div class="inv-shop-addr" style="font-size:0.82rem;color:#c8e6c9;margin-top:4px;">Near Madivalam Rd, Berigai,
+          Tamil Nadu 635105</div>
+        <div class="inv-shop-contact" style="font-size:0.82rem;color:#a5d6a7;margin-top:2px;">📞 8088587327 | ✉️
+          rmgflower1995@gmail.com</div>
+      </div>
+
+      <!-- ▓▓ BILL TITLE STRIPE ▓▓ -->
+      <div class="inv-bill-title"
+        style="background:#e8f5e9;border-top:3px solid #33a33a;border-bottom:3px solid #33a33a;text-align:center;padding:10px 0;font-size:1.05rem;font-weight:800;color:#1b5e20;letter-spacing:3px;text-transform:uppercase;">
+        RMG
+      </div>
+
+      <!-- ▓▓ BILL-TO & DATE ▓▓ -->
+      <div class="inv-meta-section"
+        style="display:flex;justify-content:space-between;padding:18px 28px;gap:16px;flex-wrap:wrap;background:#f9fdf9;border-bottom:1.5px solid #c8e6c9;">
+        <div class="inv-meta-block">
+          <div class="inv-meta-label"
+            style="font-size:0.7rem;font-weight:700;color:#33a33a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">
+            Bill To</div>
+          <div class="inv-meta-value" style="font-size:0.95rem;font-weight:700;color:#1a1a1a;">{{ bill.customer_name }}
+          </div>
+          {% if bill.phone %}
           <div class="inv-meta-sub" style="font-size:0.82rem;color:#333333;margin-top:2px;">📱 {{ bill.phone }}</div>
-        {% endif %}
-        {% if bill.email %}
+          {% endif %}
+          {% if bill.email %}
           <div class="inv-meta-sub" style="font-size:0.82rem;color:#333333;margin-top:2px;">✉️ {{ bill.email }}</div>
-        {% endif %}
+          {% endif %}
+        </div>
+        <div class="inv-meta-block" style="text-align:right;">
+          <div class="inv-meta-label"
+            style="font-size:0.7rem;font-weight:700;color:#33a33a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">
+            Created (IST)</div>
+          <div class="inv-meta-value" style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">{{ bill.created_ist }}
+          </div>
+          <div class="inv-meta-label"
+            style="font-size:0.7rem;font-weight:700;color:#33a33a;text-transform:uppercase;letter-spacing:1px;margin-top:8px;margin-bottom:2px;">
+            Date</div>
+          <div class="inv-meta-value" style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">{{ (bill.bill_date or
+            bill.created_at[:10]) }}</div>
+        </div>
       </div>
-      <div class="inv-meta-block" style="text-align:right;">
-        <div class="inv-meta-label" style="font-size:0.7rem;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Created (IST)</div>
-        <div class="inv-meta-value" style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">{{ bill.created_ist }}</div>
-        <div class="inv-meta-label" style="font-size:0.7rem;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:1px;margin-top:8px;margin-bottom:2px;">Date</div>
-        <div class="inv-meta-value" style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">{{ (bill.bill_date or bill.created_at[:10]) }}</div>
-      </div>
-    </div>
 
-    <!-- ▓▓ ITEMS TABLE ▓▓ -->
-    <table class="inv-table" style="width:100%;border-collapse:collapse;font-size:0.88rem;">
-      <thead>
-        <tr>
-          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;border-bottom:2px solid #1b5e20;">#</th>
-          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;border-bottom:2px solid #1b5e20;">Flower</th>
-          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;border-bottom:2px solid #1b5e20;">Qty</th>
-          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;border-bottom:2px solid #1b5e20;">Rate (₹)</th>
-          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;border-bottom:2px solid #1b5e20;">Amount (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for idx, item in items | enumerate %}
-        <tr>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;">{{ idx + 1 }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #e0e0e0;">{{ item.name }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:center;">{{ item.qty }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(item.rate) }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:700;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(item.total) }}</td>
-        </tr>
-        {% endfor %}
-        {% if bill.luggage_total and bill.luggage_total|float > 0 %}
-        <tr>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;">{{ (items|length) + 1 }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #e0e0e0;">Luggage</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:center;">{{ bill.luggage_qty or 0 }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(bill.luggage_rate or 0) }}</td>
-          <td style="padding:10px 14px;color:#1a1a1a;font-weight:700;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(bill.luggage_total or 0) }}</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
-
-    <!-- ▓▓ TOTALS ▓▓ -->
-    <div class="inv-totals-section" style="padding:16px 28px;background:#ffffff;">
-      <table class="inv-totals-table" style="width:100%;max-width:360px;margin-left:auto;border-collapse:collapse;">
-        <tr>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Subtotal</td>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.subtotal) }}</td>
-        </tr>
-        <tr>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">GST ({{ bill.gst }}%)</td>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.gst_amount) }}</td>
-        </tr>
-        {% if bill.old_balance and bill.old_balance|float > 0 %}
-        <tr>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Old Balance</td>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.old_balance) }}</td>
-        </tr>
-        {% endif %}
-        {% if bill.cash_paid and bill.cash_paid|float > 0 %}
-        <tr>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Cash Paid</td>
-          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.cash_paid) }}</td>
-        </tr>
-        {% endif %}
-        <tr class="inv-grand-row">
-          <td style="border-top:3px solid #1b5e20;font-size:1.15rem;font-weight:900;color:#1b5e20;padding-top:12px;padding-bottom:12px;">Grand Total</td>
-          <td style="border-top:3px solid #1b5e20;font-size:1.15rem;font-weight:900;color:#1b5e20;padding-top:12px;padding-bottom:12px;text-align:right;">₹{{ "%.2f"|format(bill.total) }}</td>
-        </tr>
-        {% if bill.amount_due is defined %}
-        <tr class="inv-due-row">
-          <td style="padding:7px 0;font-size:0.95rem;color:#c62828;font-weight:700;">Amount Due</td>
-          <td style="padding:7px 0;font-size:0.95rem;color:#c62828;font-weight:700;text-align:right;">₹{{ "%.2f"|format(bill.amount_due) }}</td>
-        </tr>
-        {% endif %}
+      <!-- ▓▓ ITEMS TABLE ▓▓ -->
+      <table class="inv-table" style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+        <thead>
+          <tr>
+            <th
+              style="background:#33a33a;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;border-bottom:2px solid #1b5e20;">
+              #</th>
+            <th
+              style="background:#33a33a;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;border-bottom:2px solid #1b5e20;">
+              Flower</th>
+            <th
+              style="background:#33a33a;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;border-bottom:2px solid #1b5e20;">
+              Qty</th>
+            <th
+              style="background:#33a33a;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;border-bottom:2px solid #1b5e20;">
+              Rate (₹)</th>
+            <th
+              style="background:#33a33a;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;border-bottom:2px solid #1b5e20;">
+              Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for idx, item in items | enumerate %}
+          <tr>
+            <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;">{{ idx + 1 }}
+            </td>
+            <td style="padding:10px 14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #e0e0e0;">{{ item.name }}
+            </td>
+            <td
+              style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:center;">
+              {{ item.qty }}</td>
+            <td
+              style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:right;">
+              {{ "%.2f"|format(item.rate) }}</td>
+            <td
+              style="padding:10px 14px;color:#1a1a1a;font-weight:700;border-bottom:1px solid #e0e0e0;text-align:right;">
+              {{ "%.2f"|format(item.total) }}</td>
+          </tr>
+          {% endfor %}
+          {% if bill.luggage_total and bill.luggage_total|float > 0 %}
+          <tr>
+            <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;">{{
+              (items|length) + 1 }}</td>
+            <td style="padding:10px 14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #e0e0e0;">Luggage</td>
+            <td
+              style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:center;">
+              {{ bill.luggage_qty or 0 }}</td>
+            <td
+              style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:right;">
+              {{ "%.2f"|format(bill.luggage_rate or 0) }}</td>
+            <td
+              style="padding:10px 14px;color:#1a1a1a;font-weight:700;border-bottom:1px solid #e0e0e0;text-align:right;">
+              {{ "%.2f"|format(bill.luggage_total or 0) }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
       </table>
+
+      <!-- ▓▓ TOTALS ▓▓ -->
+      <div class="inv-totals-section" style="padding:16px 28px;background:#ffffff;">
+        <table class="inv-totals-table" style="width:100%;max-width:360px;margin-left:auto;border-collapse:collapse;">
+          <tr>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Subtotal</td>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{
+              "%.2f"|format(bill.subtotal) }}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">GST ({{ bill.gst }}%)</td>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{
+              "%.2f"|format(bill.gst_amount) }}</td>
+          </tr>
+          {% if bill.old_balance and bill.old_balance|float > 0 %}
+          <tr>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Old Balance</td>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{
+              "%.2f"|format(bill.old_balance) }}</td>
+          </tr>
+          {% endif %}
+          {% if bill.cash_paid and bill.cash_paid|float > 0 %}
+          <tr>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Cash Paid</td>
+            <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{
+              "%.2f"|format(bill.cash_paid) }}</td>
+          </tr>
+          {% endif %}
+          <tr class="inv-grand-row">
+            <td
+              style="border-top:3px solid #1b5e20;font-size:1.15rem;font-weight:900;color:#1b5e20;padding-top:12px;padding-bottom:12px;">
+              Grand Total</td>
+            <td
+              style="border-top:3px solid #1b5e20;font-size:1.15rem;font-weight:900;color:#1b5e20;padding-top:12px;padding-bottom:12px;text-align:right;">
+              ₹{{ "%.2f"|format(bill.total) }}</td>
+          </tr>
+          {% if bill.amount_due is defined %}
+          <tr class="inv-due-row">
+            <td style="padding:7px 0;font-size:0.95rem;color:#c62828;font-weight:700;">Amount Due</td>
+            <td style="padding:7px 0;font-size:0.95rem;color:#c62828;font-weight:700;text-align:right;">₹{{
+              "%.2f"|format(bill.amount_due) }}</td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+
+      <!-- ▓▓ GREEN FOOTER ▓▓ -->
+      <div class="inv-footer"
+        style="background:#1b5e20;color:#c8e6c9;text-align:center;padding:14px 28px;font-size:0.82rem;font-weight:500;letter-spacing:0.5px;">
+        🌸 <strong style="color:#ffffff;">Thank you for shopping with us!</strong> | Visit again! | RMG Flowers
+      </div>
+
+    </div><!-- /inv-container -->
+
+  </div><!-- /page-wrapper -->
+
+  <!-- ========== WHATSAPP MODAL ========== -->
+  <div class="wa-modal-overlay no-print" id="wa-modal-overlay" onclick="closeWhatsAppModal(event)">
+    <div class="wa-modal" onclick="event.stopPropagation()">
+      <div class="wa-modal-header">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+        </svg>
+        Send Bill via WhatsApp
+      </div>
+      <div class="wa-modal-body">
+        <label for="wa-phone">Customer Phone Number
+          {% if bill.phone %}<span style="font-size:0.75rem;color:#25D366;font-weight:700;margin-left:6px">✓ Pre-filled
+            from bill</span>{% endif %}
+        </label>
+        <div class="wa-phone-prefix">
+          <span class="prefix">🇮🇳 +91</span>
+          <input type="tel" id="wa-phone" placeholder="Enter 10-digit number" maxlength="10" pattern="[0-9]{10}"
+            value="{{ bill.phone or '' | replace(' ','') | replace('-','') }}" />
+        </div>
+        <div class="wa-preview-label">🖼️ Bill Image Preview</div>
+        <div class="wa-preview-box" id="wa-preview">
+          <div class="wa-generating" id="wa-generating">
+            <div class="wa-spinner"></div>
+            <span>Generating bill image…</span>
+          </div>
+        </div>
+        <div class="wa-step-info" id="wa-step-info">
+          <span>✅</span>
+          <span id="wa-step-text">Image ready! Click Send to share via WhatsApp.</span>
+        </div>
+      </div>
+      <div class="wa-modal-footer">
+        <button class="wa-btn-cancel" onclick="closeWhatsAppModal()">Cancel</button>
+        <button class="wa-btn-send" id="wa-send-btn" onclick="sendWhatsApp()" disabled style="opacity:0.6">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+          Send Bill Image
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- ▓▓ GREEN FOOTER ▓▓ -->
-    <div class="inv-footer" style="background:#1b5e20;color:#c8e6c9;text-align:center;padding:14px 28px;font-size:0.82rem;font-weight:500;letter-spacing:0.5px;">
-      🌸 <strong style="color:#ffffff;">Thank you for shopping with us!</strong>  |  Visit again!  |  RMG Flowers
-    </div>
+  <script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+  <script>
+    function printInvoice() {
+      window.print();
+    }
 
-  </div><!-- /inv-container -->
+    function downloadPDF() {
+      var el = document.getElementById('invoice-content');
 
-</div><!-- /page-wrapper -->
-
-<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
-<script>
-  function printInvoice() {
-    window.print();
-  }
-
-  function downloadPDF() {
-    var el = document.getElementById('invoice-content');
-
-    var opt = {
-      margin:       [8, 8, 8, 8],
-      filename:     'invoice_{{ (bill.created_ist | replace(" ", "_") ) | replace(":","-") }}_{{ bill.customer_name | replace(" ","_") }}.pdf',
-      image:        { type: 'png', quality: 1.0 },
-      html2canvas:  {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        onclone: function(clonedDoc) {
-          // Hide non-invoice elements in the clone
-          var deco = clonedDoc.querySelectorAll('.page-deco, .no-print, .navbar');
-          deco.forEach(function(e) { e.style.display = 'none'; });
-
-          // Remove body::before overlay
-          var s = clonedDoc.createElement('style');
-          s.textContent = 'body::before{display:none!important;content:none!important;}';
-          clonedDoc.head.appendChild(s);
-
-          // Force the green header bg in case html2canvas misses it
-          var banner = clonedDoc.querySelector('.inv-header-banner');
-          if (banner) {
-            banner.style.backgroundColor = '#1b5e20';
-            banner.style.color = '#ffffff';
+      var opt = {
+        margin: [8, 8, 8, 8],
+        filename: 'invoice_{{ (bill.created_ist | replace(" ", "_") ) | replace(":","-") }}_{{ bill.customer_name | replace(" ","_") }}.pdf',
+        image: { type: 'png', quality: 1.0 },
+        html2canvas: {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          onclone: function (clonedDoc) {
+            var deco = clonedDoc.querySelectorAll('.page-deco, .no-print, .navbar');
+            deco.forEach(function (e) { e.style.display = 'none'; });
+            var s = clonedDoc.createElement('style');
+            s.textContent = 'body::before{display:none!important;content:none!important;}';
+            clonedDoc.head.appendChild(s);
+            var banner = clonedDoc.querySelector('.inv-header-banner');
+            if (banner) {
+              banner.style.backgroundColor = '#1b5e20';
+              banner.style.color = '#ffffff';
+            }
+            clonedDoc.querySelectorAll('.inv-table thead th').forEach(function (th) {
+              th.style.backgroundColor = '#33a33a';
+              th.style.color = '#ffffff';
+            });
+            var footer = clonedDoc.querySelector('.inv-footer');
+            if (footer) {
+              footer.style.backgroundColor = '#1b5e20';
+              footer.style.color = '#c8e6c9';
+            }
           }
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all'] }
+      };
 
-          // Force table header cells
-          clonedDoc.querySelectorAll('.inv-table thead th').forEach(function(th) {
-            th.style.backgroundColor = '#2e7d32';
-            th.style.color = '#ffffff';
-          });
+      showToast('Generating PDF…', 'info');
+      html2pdf().set(opt).from(el).save().then(function () {
+        showToast('PDF downloaded! 📄', 'success');
+      }).catch(function () {
+        showToast('PDF generation failed!', 'error');
+      });
+    }
 
-          // Force footer
-          var footer = clonedDoc.querySelector('.inv-footer');
-          if (footer) {
-            footer.style.backgroundColor = '#1b5e20';
-            footer.style.color = '#c8e6c9';
-          }
+    /* ── WhatsApp Integration (Image-based) ────────────── */
+
+    // Store the generated image blob globally
+    var _waImageBlob = null;
+    var _waImageFileName = 'RMG_Bill_{{ bill.customer_name | replace(" ","_") }}_{{ (bill.bill_date or bill.created_at[:10]) }}.png';
+    // Pre-fill phone from bill (digits only)
+    var _billPhone = '{{ bill.phone or "" }}'.replace(/\D/g, '');
+    // Detect mobile device (used to decide Web Share vs clipboard flow)
+    var _isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+
+    // Capture the invoice element as a high-quality PNG
+    function captureInvoiceImage() {
+      return new Promise(function (resolve, reject) {
+        var el = document.getElementById('invoice-content');
+        if (!el) return reject('Invoice element not found');
+
+        // Use html2canvas to capture the invoice as image
+        var captureLib = (typeof html2canvas === 'function') ? html2canvas : null;
+        if (!captureLib) {
+          return reject('html2canvas not loaded');
         }
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: ['avoid-all'] }
+
+        captureLib(el, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 15000,
+          onclone: function (clonedDoc) {
+            // Hide non-invoice elements
+            var deco = clonedDoc.querySelectorAll('.page-deco, .no-print, .navbar, .wa-modal-overlay');
+            deco.forEach(function (e) { e.style.display = 'none'; });
+            var s = clonedDoc.createElement('style');
+            s.textContent = 'body::before{display:none!important;content:none!important;}';
+            clonedDoc.head.appendChild(s);
+
+            // Force colors for accurate capture
+            var banner = clonedDoc.querySelector('.inv-header-banner');
+            if (banner) {
+              banner.style.backgroundColor = '#1b5e20';
+              banner.style.color = '#ffffff';
+            }
+            clonedDoc.querySelectorAll('.inv-table thead th').forEach(function (th) {
+              th.style.backgroundColor = '#33a33a';
+              th.style.color = '#ffffff';
+            });
+            var footer = clonedDoc.querySelector('.inv-footer');
+            if (footer) {
+              footer.style.backgroundColor = '#1b5e20';
+              footer.style.color = '#c8e6c9';
+            }
+          }
+        }).then(function (canvas) {
+          canvas.toBlob(function (blob) {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject('toBlob returned null');
+            }
+          }, 'image/png', 1.0);
+        }).catch(function (err) {
+          console.error('[WhatsApp] html2canvas error:', err);
+          reject(err);
+        });
+      });
+    }
+
+    function openWhatsAppModal() {
+      var overlay = document.getElementById('wa-modal-overlay');
+      var previewBox = document.getElementById('wa-preview');
+      var generating = document.getElementById('wa-generating');
+      var sendBtn = document.getElementById('wa-send-btn');
+      var stepInfo = document.getElementById('wa-step-info');
+
+      // Reset state
+      _waImageBlob = null;
+      sendBtn.disabled = true;
+      sendBtn.style.opacity = '0.6';
+      stepInfo.classList.remove('show');
+      previewBox.innerHTML = '<div class="wa-generating" id="wa-generating"><div class="wa-spinner"></div><span>Generating bill image…</span></div>';
+
+      overlay.classList.add('show');
+
+      // Pre-fill phone from bill, then focus
+      var phoneInput = document.getElementById('wa-phone');
+      if (_billPhone) {
+        phoneInput.value = _billPhone;
+      }
+      setTimeout(function () {
+        phoneInput.focus();
+        // Move cursor to end if number is pre-filled
+        if (_billPhone) {
+          phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+        }
+      }, 350);
+
+      // Generate the image
+      captureInvoiceImage().then(function (blob) {
+        _waImageBlob = blob;
+
+        // Show preview
+        var imgUrl = URL.createObjectURL(blob);
+        previewBox.innerHTML = '<img src="' + imgUrl + '" alt="Bill Preview" />';
+
+        // Enable send button
+        sendBtn.disabled = false;
+        sendBtn.style.opacity = '1';
+
+        // Show step info
+        stepInfo.classList.add('show');
+        var stepText = document.getElementById('wa-step-text');
+
+        // Check if Web Share API with file support is available
+        if (_isMobile && navigator.canShare && navigator.canShare({ files: [new File([blob], _waImageFileName, { type: 'image/png' })] })) {
+          stepText.textContent = 'Image ready! Click Send — WhatsApp will let you share directly.';
+        } else if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+          stepText.textContent = '📋 Image ready! Click Send → WhatsApp opens → press Ctrl+V to paste the bill image.';
+        } else {
+          stepText.textContent = 'Image ready! It will be downloaded — attach it in the WhatsApp chat.';
+        }
+      }).catch(function (err) {
+        previewBox.innerHTML = '<div class="wa-generating"><span style="font-size:2rem">❌</span><span>Failed to generate image. Please try again.</span></div>';
+        console.error('Image capture failed:', err);
+      });
+    }
+
+    function closeWhatsAppModal(e) {
+      if (e && e.target !== document.getElementById('wa-modal-overlay')) return;
+      document.getElementById('wa-modal-overlay').classList.remove('show');
+    }
+    window.closeWhatsAppModal = function (e) {
+      if (e && e.target && e.target !== document.getElementById('wa-modal-overlay')) return;
+      document.getElementById('wa-modal-overlay').classList.remove('show');
     };
 
-    showToast('Generating PDF…', 'info');
-    html2pdf().set(opt).from(el).save().then(function() {
-      showToast('PDF downloaded! 📄', 'success');
-    }).catch(function() {
-      showToast('PDF generation failed!', 'error');
-    });
-  }
+    function sendWhatsApp() {
+      var phoneInput = document.getElementById('wa-phone');
+      var phone = (phoneInput.value || '').replace(/\D/g, '');
 
-  window.showToast = function(msg, type) {
-    type = type || 'info';
-    var container = document.getElementById('toast-container');
-    if (!container) return;
-    var toast = document.createElement('div');
-    toast.className = 'toast-msg ' + type;
-    var icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
-    toast.innerHTML = '<span>' + (icons[type] || 'ℹ️') + '</span> ' + msg;
-    container.appendChild(toast);
-    requestAnimationFrame(function() { toast.classList.add('show'); });
-    setTimeout(function() {
-      toast.classList.remove('show');
-      setTimeout(function() { toast.remove(); }, 350);
-    }, 3500);
-  };
-</script>
+      if (!phone || phone.length !== 10) {
+        showToast('Please enter a valid 10-digit phone number.', 'warning');
+        phoneInput.focus();
+        return;
+      }
+
+      if (!_waImageBlob) {
+        showToast('Image not ready yet. Please wait…', 'warning');
+        return;
+      }
+
+      var fullPhone = '91' + phone;
+      var file = new File([_waImageBlob], _waImageFileName, { type: 'image/png' });
+
+      // Only use Web Share API on real mobile devices (it shows a contact picker on desktop)
+      if (_isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'RMG Flowers Bill',
+          text: 'Bill for {{ bill.customer_name }} - ₹{{ "%.2f"|format(bill.total) }}'
+        }).then(function () {
+          showToast('Bill shared successfully! 🌸', 'success');
+          closeWhatsAppModal();
+        }).catch(function (err) {
+          if (err.name !== 'AbortError') {
+            fallbackDownloadAndOpen(fullPhone, file);
+          }
+        });
+      } else {
+        // Desktop: download the image then open WhatsApp directly to the entered number
+        fallbackDownloadAndOpen(fullPhone, file);
+      }
+    }
+
+    function fallbackDownloadAndOpen(fullPhone, file) {
+      var waUrl = 'https://wa.me/' + fullPhone;
+
+      // Try to copy image to clipboard so user can Ctrl+V paste it in WhatsApp
+      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+        var item = new ClipboardItem({ 'image/png': file });
+        navigator.clipboard.write([item]).then(function () {
+          showToast('📋 Bill image copied! In WhatsApp press Ctrl+V to paste.', 'success');
+          setTimeout(function () {
+            window.open(waUrl, '_blank');
+            closeWhatsAppModal();
+          }, 1200);
+        }).catch(function () {
+          // Clipboard failed — fallback to download
+          downloadAndOpen(fullPhone, file, waUrl);
+        });
+      } else {
+        downloadAndOpen(fullPhone, file, waUrl);
+      }
+    }
+
+    function downloadAndOpen(fullPhone, file, waUrl) {
+      var url = URL.createObjectURL(file);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = _waImageFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Image downloaded! Attach it in WhatsApp chat. 📎', 'success');
+      setTimeout(function () {
+        window.open(waUrl, '_blank');
+        closeWhatsAppModal();
+      }, 1200);
+    }
+
+    // Allow Enter key in phone input to send
+    document.addEventListener('DOMContentLoaded', function () {
+      var waPhone = document.getElementById('wa-phone');
+      if (waPhone) {
+        waPhone.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendWhatsApp();
+          }
+        });
+      }
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        var overlay = document.getElementById('wa-modal-overlay');
+        if (overlay && overlay.classList.contains('show')) {
+          overlay.classList.remove('show');
+        }
+      }
+    });
+
+    window.showToast = function (msg, type) {
+      type = type || 'info';
+      var container = document.getElementById('toast-container');
+      if (!container) return;
+      var toast = document.createElement('div');
+      toast.className = 'toast-msg ' + type;
+      var icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      toast.innerHTML = '<span>' + (icons[type] || 'ℹ️') + '</span> ' + msg;
+      container.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('show'); });
+      setTimeout(function () {
+        toast.classList.remove('show');
+        setTimeout(function () { toast.remove(); }, 350);
+      }, 3500);
+    };
+  </script>
 </body>
+
 </html>
