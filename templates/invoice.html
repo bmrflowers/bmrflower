@@ -8,6 +8,185 @@
   <!-- html2pdf CDN (PDF download) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <style>
+    /* ---- Invoice-specific styles (screen + PDF) ---- */
+    .inv-container {
+      background: #ffffff;
+      max-width: 780px;
+      margin: 0 auto;
+      border: 2px solid #27ac30;
+      border-radius: 0;
+      overflow: hidden;
+      font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* Green Header Banner */
+    .inv-header-banner {
+      background: #1b5e20;
+      color: #ffffff;
+      padding: 22px 28px;
+      text-align: center;
+    }
+    .inv-header-banner .inv-logo-img {
+      max-height: 70px;
+      margin-bottom: 8px;
+    }
+    .inv-header-banner .inv-shop-title {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 2px;
+      margin: 0;
+    }
+    .inv-header-banner .inv-shop-addr {
+      font-size: 0.82rem;
+      color: #c8e6c9;
+      margin-top: 4px;
+    }
+    .inv-header-banner .inv-shop-contact {
+      font-size: 0.82rem;
+      color: #a5d6a7;
+      margin-top: 2px;
+    }
+
+    /* Bill Title stripe */
+    .inv-bill-title {
+      background: #e8f5e9;
+      border-top: 3px solid #2e7d32;
+      border-bottom: 3px solid #2e7d32;
+      text-align: center;
+      padding: 10px 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #1b5e20;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* Meta (Bill To / Date) */
+    .inv-meta-section {
+      display: flex;
+      justify-content: space-between;
+      padding: 18px 28px;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #f9fdf9;
+      border-bottom: 1.5px solid #c8e6c9;
+    }
+    .inv-meta-block {}
+    .inv-meta-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #2e7d32;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .inv-meta-value {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .inv-meta-sub {
+      font-size: 0.82rem;
+      color: #333333;
+      margin-top: 2px;
+    }
+
+    /* Items Table */
+    .inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .inv-table thead th {
+      background: #2e7d32;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      padding: 10px 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+      border-bottom: 2px solid #1b5e20;
+    }
+    .inv-table tbody td {
+      padding: 10px 14px;
+      color: #1a1a1a;
+      font-weight: 500;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .inv-table tbody tr:nth-child(even) td {
+      background: #f5faf5;
+    }
+    .inv-table tbody tr:nth-child(odd) td {
+      background: #ffffff;
+    }
+    .inv-table .text-center { text-align: center; }
+    .inv-table .text-right { text-align: right; }
+
+    /* Totals Section */
+    .inv-totals-section {
+      padding: 16px 28px 16px 28px;
+      background: #ffffff;
+    }
+    .inv-totals-table {
+      width: 100%;
+      max-width: 360px;
+      margin-left: auto;
+      border-collapse: collapse;
+    }
+    .inv-totals-table td {
+      padding: 7px 0;
+      font-size: 0.9rem;
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+    .inv-totals-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+    .inv-totals-table .inv-grand-row td {
+      border-top: 3px solid #1b5e20;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #1b5e20;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+    .inv-totals-table .inv-due-row td {
+      color: #c62828;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    /* Footer */
+    .inv-footer {
+      background: #1b5e20;
+      color: #c8e6c9;
+      text-align: center;
+      padding: 14px 28px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+    .inv-footer strong {
+      color: #ffffff;
+    }
+
+    /* Print-specific */
+    @media print {
+      body { background: #fff !important; }
+      body::before { display: none !important; }
+      .page-deco, .no-print, .navbar, .invoice-actions { display: none !important; }
+      .inv-container { border: 2px solid #1b5e20 !important; }
+      .inv-header-banner { background: #1b5e20 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .inv-table thead th { background: #2e7d32 !important; color: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .inv-bill-title { background: #e8f5e9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .inv-footer { background: #1b5e20 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+  </style>
 </head>
 <body>
 
@@ -38,158 +217,195 @@
     <a href="{{ url_for('create_bill') }}" class="btn btn-accent">🧾 New Bill</a>
   </div>
 
-  <!-- Invoice Paper -->
-  <div class="invoice-paper" id="invoice-content">
+  <!-- ========== INVOICE CONTENT (captured for PDF) ========== -->
+  <div id="invoice-content" class="inv-container">
 
-    <!-- Header -->
-    <div class="invoice-header">
-      <div class="invoice-shop-name"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}" style="max-height:90px;vertical-align:middle" /></div>
-      <div class="invoice-shop-sub">Near Madivalam Rd, Berigai, Tamil Nadu 635105 </div>
-      <div class="invoice-shop-sub">📞 {{ 8088587327 }} &nbsp;|&nbsp; ✉️ rmgflower1995@gmail.com</div>
-      <!-- <div class="invoice-shop-sub" style="margin-top:.2rem">{{ shop.gst }}</div> -->
+    <!-- ▓▓ GREEN HEADER BANNER ▓▓ -->
+    <div class="inv-header-banner" style="background:#1b5e20;color:#ffffff;padding:22px 28px;text-align:center;">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ shop.name }}"
+           class="inv-logo-img" style="max-height:70px;margin-bottom:8px;" />
+      <div class="inv-shop-title" style="font-size:1.8rem;font-weight:900;color:#ffffff;letter-spacing:2px;">RMG FLOWERS</div>
+      <div class="inv-shop-addr" style="font-size:0.82rem;color:#c8e6c9;margin-top:4px;">Near Madivalam Rd, Berigai, Tamil Nadu 635105</div>
+      <div class="inv-shop-contact" style="font-size:0.82rem;color:#a5d6a7;margin-top:2px;">📞 8088587327  |  ✉️ rmgflower1995@gmail.com</div>
     </div>
 
-    <hr class="invoice-divider" />
-
-    <div style="text-align:center;font-weight:700;font-size:1rem;color:var(--primary);
-                letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem">
-      RMG FLOWERS BILL
+    <!-- ▓▓ BILL TITLE STRIPE ▓▓ -->
+    <div class="inv-bill-title" style="background:#e8f5e9;border-top:3px solid #2e7d32;border-bottom:3px solid #2e7d32;text-align:center;padding:10px 0;font-size:1.05rem;font-weight:800;color:#1b5e20;letter-spacing:3px;text-transform:uppercase;">
+      RMG
     </div>
 
-    <!-- Meta info -->
-    <div class="invoice-meta">
-      <div class="block">
-        <strong>Bill To</strong>
-        <span style="font-size:.95rem;font-weight:600">{{ bill.customer_name }}</span>
+    <!-- ▓▓ BILL-TO & DATE ▓▓ -->
+    <div class="inv-meta-section" style="display:flex;justify-content:space-between;padding:18px 28px;gap:16px;flex-wrap:wrap;background:#f9fdf9;border-bottom:1.5px solid #c8e6c9;">
+      <div class="inv-meta-block">
+        <div class="inv-meta-label" style="font-size:0.7rem;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Bill To</div>
+        <div class="inv-meta-value" style="font-size:0.95rem;font-weight:700;color:#1a1a1a;">{{ bill.customer_name }}</div>
         {% if bill.phone %}
-          <span style="display:block;font-size:.85rem;color:var(--text-muted)">📱 {{ bill.phone }}</span>
+          <div class="inv-meta-sub" style="font-size:0.82rem;color:#333333;margin-top:2px;">📱 {{ bill.phone }}</div>
         {% endif %}
         {% if bill.email %}
-          <span style="display:block;font-size:.85rem;color:var(--text-muted)">✉️ {{ bill.email }}</span>
+          <div class="inv-meta-sub" style="font-size:0.82rem;color:#333333;margin-top:2px;">✉️ {{ bill.email }}</div>
         {% endif %}
       </div>
-      <div class="block" style="text-align:right">
-        <strong>Created (IST)</strong>
-        <span style="font-weight:700">{{ bill.created_ist }}</span>
-        <br />
-        <strong>Date</strong>
-        <span>{{ (bill.bill_date or bill.created_at[:10]) }}</span>
+      <div class="inv-meta-block" style="text-align:right;">
+        <div class="inv-meta-label" style="font-size:0.7rem;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Created (IST)</div>
+        <div class="inv-meta-value" style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">{{ bill.created_ist }}</div>
+        <div class="inv-meta-label" style="font-size:0.7rem;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:1px;margin-top:8px;margin-bottom:2px;">Date</div>
+        <div class="inv-meta-value" style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">{{ (bill.bill_date or bill.created_at[:10]) }}</div>
       </div>
     </div>
 
-    <!-- Items Table -->
-    <table class="invoice-table">
+    <!-- ▓▓ ITEMS TABLE ▓▓ -->
+    <table class="inv-table" style="width:100%;border-collapse:collapse;font-size:0.88rem;">
       <thead>
         <tr>
-          <th>#</th>
-          <th>Flower</th>
-          <th style="text-align:center">Qty</th>
-          <th style="text-align:right">Rate (₹)</th>
-          <th style="text-align:right">Amount (₹)</th>
+          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;border-bottom:2px solid #1b5e20;">#</th>
+          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;border-bottom:2px solid #1b5e20;">Flower</th>
+          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;border-bottom:2px solid #1b5e20;">Qty</th>
+          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;border-bottom:2px solid #1b5e20;">Rate (₹)</th>
+          <th style="background:#2e7d32;color:#ffffff;font-weight:700;font-size:0.78rem;padding:10px 14px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;border-bottom:2px solid #1b5e20;">Amount (₹)</th>
         </tr>
       </thead>
       <tbody>
         {% for idx, item in items | enumerate %}
         <tr>
-          <td>{{ idx + 1 }}</td>
-          <td>{{ item.name }}</td>
-          <td style="text-align:center">{{ item.qty }}</td>
-          <td style="text-align:right">{{ "%.2f"|format(item.rate) }}</td>
-          <td style="text-align:right">{{ "%.2f"|format(item.total) }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;">{{ idx + 1 }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #e0e0e0;">{{ item.name }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:center;">{{ item.qty }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(item.rate) }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:700;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(item.total) }}</td>
         </tr>
         {% endfor %}
         {% if bill.luggage_total and bill.luggage_total|float > 0 %}
         <tr>
-          <td>{{ (items|length) + 1 }}</td>
-          <td>Luggage</td>
-          <td style="text-align:center">{{ bill.luggage_qty or 0 }}</td>
-          <td style="text-align:right">{{ "%.2f"|format(bill.luggage_rate or 0) }}</td>
-          <td style="text-align:right">{{ "%.2f"|format(bill.luggage_total or 0) }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;">{{ (items|length) + 1 }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #e0e0e0;">Luggage</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:center;">{{ bill.luggage_qty or 0 }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(bill.luggage_rate or 0) }}</td>
+          <td style="padding:10px 14px;color:#1a1a1a;font-weight:700;border-bottom:1px solid #e0e0e0;text-align:right;">{{ "%.2f"|format(bill.luggage_total or 0) }}</td>
         </tr>
         {% endif %}
       </tbody>
     </table>
 
-    <!-- Totals -->
-    <div class="invoice-totals">
-      <div class="invoice-total-row">
-        <span>Subtotal</span>
-        <span>₹{{ "%.2f"|format(bill.subtotal) }}</span>
-      </div>
-      <div class="invoice-total-row">
-        <span>GST ({{ bill.gst }}%)</span>
-        <span>₹{{ "%.2f"|format(bill.gst_amount) }}</span>
-      </div>
-      {% if bill.old_balance and bill.old_balance|float > 0 %}
-      <div class="invoice-total-row">
-        <span>Old Balance</span>
-        <span>₹{{ "%.2f"|format(bill.old_balance) }}</span>
-      </div>
-      {% endif %}
-      {% if bill.cash_paid and bill.cash_paid|float > 0 %}
-      <div class="invoice-total-row">
-        <span>Cash Paid</span>
-        <span>₹{{ "%.2f"|format(bill.cash_paid) }}</span>
-      </div>
-      {% endif %}
-      <div class="invoice-total-row grand">
-        <span>Grand Total</span>
-        <span>₹{{ "%.2f"|format(bill.total) }}</span>
-      </div>
-      {% if bill.amount_due is defined %}
-      <div class="invoice-total-row">
-        <span>Amount Due</span>
-        <span>₹{{ "%.2f"|format(bill.amount_due) }}</span>
-      </div>
-      {% endif %}
+    <!-- ▓▓ TOTALS ▓▓ -->
+    <div class="inv-totals-section" style="padding:16px 28px;background:#ffffff;">
+      <table class="inv-totals-table" style="width:100%;max-width:360px;margin-left:auto;border-collapse:collapse;">
+        <tr>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Subtotal</td>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.subtotal) }}</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">GST ({{ bill.gst }}%)</td>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.gst_amount) }}</td>
+        </tr>
+        {% if bill.old_balance and bill.old_balance|float > 0 %}
+        <tr>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Old Balance</td>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.old_balance) }}</td>
+        </tr>
+        {% endif %}
+        {% if bill.cash_paid and bill.cash_paid|float > 0 %}
+        <tr>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:500;">Cash Paid</td>
+          <td style="padding:7px 0;font-size:0.9rem;color:#1a1a1a;font-weight:600;text-align:right;">₹{{ "%.2f"|format(bill.cash_paid) }}</td>
+        </tr>
+        {% endif %}
+        <tr class="inv-grand-row">
+          <td style="border-top:3px solid #1b5e20;font-size:1.15rem;font-weight:900;color:#1b5e20;padding-top:12px;padding-bottom:12px;">Grand Total</td>
+          <td style="border-top:3px solid #1b5e20;font-size:1.15rem;font-weight:900;color:#1b5e20;padding-top:12px;padding-bottom:12px;text-align:right;">₹{{ "%.2f"|format(bill.total) }}</td>
+        </tr>
+        {% if bill.amount_due is defined %}
+        <tr class="inv-due-row">
+          <td style="padding:7px 0;font-size:0.95rem;color:#c62828;font-weight:700;">Amount Due</td>
+          <td style="padding:7px 0;font-size:0.95rem;color:#c62828;font-weight:700;text-align:right;">₹{{ "%.2f"|format(bill.amount_due) }}</td>
+        </tr>
+        {% endif %}
+      </table>
     </div>
 
-    <!-- Footer note -->
-    <div class="invoice-footer-note">
-      🌸 Thank you for shopping with us! &nbsp;|&nbsp; Visit again!
+    <!-- ▓▓ GREEN FOOTER ▓▓ -->
+    <div class="inv-footer" style="background:#1b5e20;color:#c8e6c9;text-align:center;padding:14px 28px;font-size:0.82rem;font-weight:500;letter-spacing:0.5px;">
+      🌸 <strong style="color:#ffffff;">Thank you for shopping with us!</strong>  |  Visit again!  |  RMG Flowers
     </div>
 
-  </div><!-- /invoice-paper -->
+  </div><!-- /inv-container -->
 
 </div><!-- /page-wrapper -->
 
 <script src="{{ url_for('static', filename='js/billing.js') }}"></script>
 <script>
-  // Jinja's enumerate is not built-in — patch via filter in app or handle here
-  // (enumerate filter is added in app.py via template_filter)
-
   function printInvoice() {
     window.print();
   }
 
   function downloadPDF() {
-    const el = document.getElementById('invoice-content');
-    const opt = {
-      margin:       [10, 10, 10, 10],
+    var el = document.getElementById('invoice-content');
+
+    var opt = {
+      margin:       [8, 8, 8, 8],
       filename:     'invoice_{{ (bill.created_ist | replace(" ", "_") ) | replace(":","-") }}_{{ bill.customer_name | replace(" ","_") }}.pdf',
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
+      image:        { type: 'png', quality: 1.0 },
+      html2canvas:  {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        onclone: function(clonedDoc) {
+          // Hide non-invoice elements in the clone
+          var deco = clonedDoc.querySelectorAll('.page-deco, .no-print, .navbar');
+          deco.forEach(function(e) { e.style.display = 'none'; });
+
+          // Remove body::before overlay
+          var s = clonedDoc.createElement('style');
+          s.textContent = 'body::before{display:none!important;content:none!important;}';
+          clonedDoc.head.appendChild(s);
+
+          // Force the green header bg in case html2canvas misses it
+          var banner = clonedDoc.querySelector('.inv-header-banner');
+          if (banner) {
+            banner.style.backgroundColor = '#1b5e20';
+            banner.style.color = '#ffffff';
+          }
+
+          // Force table header cells
+          clonedDoc.querySelectorAll('.inv-table thead th').forEach(function(th) {
+            th.style.backgroundColor = '#2e7d32';
+            th.style.color = '#ffffff';
+          });
+
+          // Force footer
+          var footer = clonedDoc.querySelector('.inv-footer');
+          if (footer) {
+            footer.style.backgroundColor = '#1b5e20';
+            footer.style.color = '#c8e6c9';
+          }
+        }
+      },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['avoid-all'] }
     };
+
     showToast('Generating PDF…', 'info');
-    html2pdf().set(opt).from(el).save().then(() => {
+    html2pdf().set(opt).from(el).save().then(function() {
       showToast('PDF downloaded! 📄', 'success');
+    }).catch(function() {
+      showToast('PDF generation failed!', 'error');
     });
   }
 
-  window.showToast = function(msg, type = 'info') {
-    const container = document.getElementById('toast-container');
+  window.showToast = function(msg, type) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
     if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast-msg ${type}`;
-    const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
-    toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${msg}`;
+    var toast = document.createElement('div');
+    toast.className = 'toast-msg ' + type;
+    var icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+    toast.innerHTML = '<span>' + (icons[type] || 'ℹ️') + '</span> ' + msg;
     container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('show'));
-    setTimeout(() => {
+    requestAnimationFrame(function() { toast.classList.add('show'); });
+    setTimeout(function() {
       toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 350);
+      setTimeout(function() { toast.remove(); }, 350);
     }, 3500);
   };
 </script>

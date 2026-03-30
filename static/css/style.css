@@ -491,18 +491,36 @@ a:hover { color: var(--primary-dark); }
   .invoice-paper {
     background: #fff !important;
     box-shadow: none !important;
-    border: 1px solid var(--border) !important;
+    border: 2px solid #2e7d32 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   /* Make sure headers and totals print with intended colors */
-  .invoice-table th,
-  .invoice-shop-name,
-  .invoice-meta,
-  .invoice-total-row.grand {
+  .invoice-table th {
+    background: #2e7d32 !important;
+    color: #ffffff !important;
     opacity: 1 !important;
     filter: none !important;
+  }
+  .invoice-shop-name {
+    -webkit-text-fill-color: #1b5e20 !important;
+    color: #1b5e20 !important;
+    opacity: 1 !important;
+  }
+  .invoice-meta {
+    background: #e8f5e9 !important;
+    border: 1.5px solid #2e7d32 !important;
+    opacity: 1 !important;
+  }
+  .invoice-total-row.grand {
+    color: #1b5e20 !important;
+    font-weight: 800 !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  .invoice-table td {
+    color: #1a2332 !important;
   }
 }
 .invoice-header { text-align: center; margin-bottom: 1.5rem; }
@@ -936,10 +954,36 @@ a:hover { color: var(--primary-dark); }
 @media print {
   .no-print, .navbar, .bill-footer-sticky, .invoice-actions, .flash-list { display: none !important; }
   body { background: #fff; font-size: 12pt; }
+  body::before { display: none !important; }
+  .page-deco { display: none !important; }
   .invoice-paper { box-shadow: none; padding: 0; max-width: 100%; }
-  .invoice-shop-name { font-size: 18pt; -webkit-text-fill-color: #1b5e20; }
-  .invoice-divider { border-top-color: #000; }
-  .invoice-table th { background: #ccc !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .invoice-paper::before { display: none !important; }
+  .invoice-shop-name {
+    font-size: 18pt;
+    -webkit-text-fill-color: #1b5e20 !important;
+    color: #1b5e20 !important;
+  }
+  .invoice-divider { border-top-color: #2e7d32; border-top-width: 3px; }
+  .invoice-table th {
+    background: #2e7d32 !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .invoice-table td {
+    color: #1a2332 !important;
+  }
+  .invoice-meta {
+    background: #e8f5e9 !important;
+    border: 1.5px solid #2e7d32 !important;
+  }
+  .invoice-total-row {
+    color: #1a2332 !important;
+  }
+  .invoice-total-row.grand {
+    color: #1b5e20 !important;
+    font-weight: 800 !important;
+  }
   @page { margin: 1.5cm; }
 }
 
